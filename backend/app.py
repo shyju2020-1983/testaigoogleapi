@@ -91,5 +91,5 @@ async def query_file(request: QueryRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # Must use '0.0.0.0' so it listens to external internet requests
+    # '0.0.0.0' forces the application to listen to all public internet requests
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
