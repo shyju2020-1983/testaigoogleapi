@@ -27,8 +27,8 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
         return file.read()
 
 # 3. CONFIGURE GEMINI MODEL
-import os
-MY_SECRET_KEY = os.getenv("AQ.Ab8RN6L2HYoX687pJUFKVXnWjkxGCaX8XHbk70YYQqEPwysEkg")
+
+MY_SECRET_KEY = "AQ.Ab8RN6L2HYoX687pJUFKVXnWjkxGCaX8XHbk70YYQqEPwysEkg"  # <-- PASTE YOUR STRIPPED API KEY HERE
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
