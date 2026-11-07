@@ -25,7 +25,7 @@ function App() {
     setQuery(''); // Clear the input field instantly for a responsive feel
     setLoading(true);
 
-    const targetUrl = 'http://localhost:8000/api/query';
+const targetUrl = 'http://13.207.200.196';
 
     try {
       const res = await fetch(targetUrl, {
