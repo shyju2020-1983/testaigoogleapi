@@ -17,7 +17,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. HELPER FUNCTION TO READ FILE
+# 2. SECURE ENVIRONMENT VARIABLE INTEGRATION
+# Pulls the key dynamically from your EC2 Linux instance memory (setup via export command)
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+
+if not GOOGLE_API_KEY:
+    # Fails immediately if the environment variable was not correctly applied or loaded
+    raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY environment variable is missing on this EC2 instance!")
+
+# 3. HELPER FUNCTION TO READ FILE
 def read_sample_file(file_path: str = "sample.txt") -> str:
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
@@ -26,21 +34,14 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-# 3. CONFIGURE GEMINI MODEL
-
-MY_SECRET_KEY = "AQ.Ab8RN6L2HYoX687pJUFKVXnWjkxGCaX8XHbk70YYQqEPwysEkg"  # <-- PASTE YOUR STRIPPED API KEY HERE
-
+# 4. CONFIGURE GEMINI MODEL
+# The model now receives the secure environment variable key directly
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.3,
-    google_api_key=MY_SECRET_KEY
+    google_api_key=GOOGLE_API_KEY
 )
 
-# system_prompt = (
-#     "You are an assistant for question-answering tasks. "
-#     "Use the following pieces of context to answer the question.\n\n"
-#     "Context:\n{context}"
-# )
 system_prompt = (
     "You are a helpful assistant for the Kadirur village chatbot. "
     "You have access to a local knowledge base provided below in the Context section.\n\n"
@@ -58,7 +59,7 @@ prompt_template = ChatPromptTemplate.from_messages([
     ("human", "{input}"),
 ])
 
-# 4. ROBUST ROUTE PIPELINE
+# 5. ROBUST ROUTE PIPELINE
 class QueryRequest(BaseModel):
     question: str
 
@@ -76,7 +77,7 @@ async def query_file(request: QueryRequest):
         response = llm.invoke(messages)
         print("📤 Gemini replied successfully!")
         
-        # ✅ THE SERVER-SIDE FIX: Extract plain text directly from LangChain's response message content property
+        # Extract plain text directly from LangChain's response message content property
         plain_text_answer = response.content
         if isinstance(plain_text_answer, list) and len(plain_text_answer) > 0:
             if isinstance(plain_text_answer[0], dict) and "text" in plain_text_answer[0]:
@@ -91,5 +92,6 @@ async def query_file(request: QueryRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # '0.0.0.0' forces the application to listen to all public internet requests
+    # '0.0.0.0' binds Uvicorn to all interfaces, allowing public calls via your IP: 43.205.177.98
+    # Port 8000 matches your API endpoint configuration
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

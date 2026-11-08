@@ -25,7 +25,7 @@ function App() {
     setQuery(''); // Clear the input field instantly for a responsive feel
     setLoading(true);
 
-const targetUrl = 'http://13.207.200.196';
+    const targetUrl = 'http://localhost:8000/api/query';
 
     try {
       const res = await fetch(targetUrl, {
@@ -69,9 +69,9 @@ const targetUrl = 'http://13.207.200.196';
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
         
         <h2 style={{ borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-          <b>Kadirur village AI Chat Bot</b>   
+          <b>Kadirur village chat bot</b>
         </h2>
-     
+        
         {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
           {chatHistory.map((chat, index) => (
@@ -113,7 +113,7 @@ const targetUrl = 'http://13.207.200.196';
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Ask a question about Kadirur..."}
+            placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Ask a question about your text file..."}
             style={{ flexGrow: 1, padding: '12px', fontSize: '15px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', outline: 'none' }}
             disabled={loading}
           />
