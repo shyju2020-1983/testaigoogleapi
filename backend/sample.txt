@@ -887,6 +887,7 @@ Plumbers in kadirur :
 Rajesh 98766829
 vineesh 8868622
 rajan 86352486
+cost 1000
 Rijoy 93797927
 
 Electicians in kadirur :
