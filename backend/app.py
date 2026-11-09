@@ -6,26 +6,24 @@ from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
-# 1. INITIALIZE FASTAPI & CORS
+
 app = FastAPI()
 
+# FIXED: Set credentials to True for flexible production web configurations
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["*"], 
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-load_dotenv()
-# 2. SECURE ENVIRONMENT VARIABLE INTEGRATION
-# Pulls the key dynamically from your EC2 Linux instance memory (setup via export command)
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
+load_dotenv()
+
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
-    # Fails immediately if the environment variable was not correctly applied or loaded
     raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY environment variable is missing on this EC2 instance!")
 
-# 3. HELPER FUNCTION TO READ FILE
 def read_sample_file(file_path: str = "sample.txt") -> str:
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
@@ -34,8 +32,6 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-# 4. CONFIGURE GEMINI MODEL
-# The model now receives the secure environment variable key directly
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.3,
@@ -54,12 +50,12 @@ system_prompt = (
     "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
     "Context:\n{context}"
 )
+
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
     ("human", "{input}"),
 ])
 
-# 5. ROBUST ROUTE PIPELINE
 class QueryRequest(BaseModel):
     question: str
 
@@ -77,21 +73,19 @@ async def query_file(request: QueryRequest):
         response = llm.invoke(messages)
         print("📤 Gemini replied successfully!")
         
-        # Extract plain text directly from LangChain's response message content property
         plain_text_answer = response.content
         if isinstance(plain_text_answer, list) and len(plain_text_answer) > 0:
-            if isinstance(plain_text_answer[0], dict) and "text" in plain_text_answer[0]:
-                plain_text_answer = plain_text_answer[0]["text"]
+            if isinstance(plain_text_answer, dict) and "text" in plain_text_answer:
+                plain_text_answer = plain_text_answer["text"]
         
         return {"answer": str(plain_text_answer)}
         
     except Exception as e:
         error_msg = str(e)
         print(f"❌ BACKEND EXCEPTION: {error_msg}", file=sys.stderr)
-        return {"answer": f"Backend Error: {error_msg}"}
+        raise HTTPException(status_code=500, detail=f"Backend Error: {error_msg}")
 
 if __name__ == "__main__":
     import uvicorn
-    # '0.0.0.0' binds Uvicorn to all interfaces, allowing public calls via your IP: 43.205.177.98
-    # Port 8000 matches your API endpoint configuration
+    # FIXED: Binds Uvicorn to 0.0.0.0 so it dynamically catches all external interface network hits
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
