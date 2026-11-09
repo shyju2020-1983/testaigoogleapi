@@ -9,11 +9,11 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
-# FIXED CORS CONFIGURATION FOR WILDCARD ORIGINS
+# FULLY COMPLIANT MIDDLEWARE LAYER
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # Must be False when allow_origins is ["*"] to prevent protocol errors
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -32,7 +32,7 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-# INITIALIZE GOOGLE GEMINI ENGINE MODEL
+# KEEPING YOUR EXACT GOOGLE GENERATIVE AI MODEL RULES
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.3,
@@ -62,7 +62,7 @@ class QueryRequest(BaseModel):
 
 @app.post("/api/query")
 async def query_file(request: QueryRequest):
-    print(f"📥 Received incoming query: {request.question}")
+    print(f"📥 Received proxy-relayed query: {request.question}")
     try:
         context_data = read_sample_file("sample.txt")
         
@@ -72,7 +72,7 @@ async def query_file(request: QueryRequest):
         )
         
         response = llm.invoke(messages)
-        print("📤 Gemini replied successfully!")
+        print("📤 Google Gemini replied successfully!")
         
         plain_text_answer = response.content
         if isinstance(plain_text_answer, list) and len(plain_text_answer) > 0:
@@ -88,5 +88,5 @@ async def query_file(request: QueryRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # Listens publicly across all interfaces to resolve external incoming connection targets
+    # Bind back to public port 8000 directly to accept connection inputs from the proxy
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
