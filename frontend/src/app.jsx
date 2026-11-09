@@ -2,11 +2,32 @@ import React, { useState, useEffect, useRef } from 'react';
 
 function App() {
   const [query, setQuery] = useState('');
-  // Stores the array of conversation pairs: [{ question: "...", answer: "..." }]
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorDetails, setErrorDetails] = useState(null);
   
-  // Create a reference to automatically scroll to the newest inputs
+  // ANIMATED LIGHT BLUE PLACEHOLDER ROTATION STATES
+  const [placeholderText, setPlaceholderText] = useState('Ask question about kadirur');
+  const [followUpPlaceholder, setFollowUpPlaceholder] = useState('Ask follow-up question');
+  
+  useEffect(() => {
+    let isEnglish = true;
+
+    const interval = setInterval(() => {
+      isEnglish = !isEnglish;
+
+      if (isEnglish) {
+        setPlaceholderText('Ask question about Kadirur');
+        setFollowUpPlaceholder('Ask follow-up question');
+      } else {
+        setPlaceholderText('കതിരൂരിനെക്കുറിച്ച് ചോദ്യം ചോദിക്കാം');
+        setFollowUpPlaceholder('വീണ്ടും തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
+      }
+    }, 2000); // Cycles every 2000ms (2 seconds)
+
+    return () => clearInterval(interval); // Clean up timer on unmount
+  }, []);
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -15,20 +36,20 @@ function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatHistory, loading]);
+  }, [chatHistory, loading, errorDetails]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     const currentQuery = query;
-    setQuery(''); // Clear the input field instantly for a responsive feel
+    setQuery(''); 
     setLoading(true);
+    setErrorDetails(null);
 
-
-
-
-    const targetUrl = 'http://localhost:8000/api/query';
+    const ec2PublicIp = "13.233.119.28"; 
+    const targetUrl = `http://${ec2PublicIp}:8000/api/query`;
+  // const targetUrl = 'http://localhost:8000/api/query';
     try {
       const res = await fetch(targetUrl, {
         method: 'POST',
@@ -37,17 +58,13 @@ function App() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Server status error: ${res.status}`);
+        throw new Error(`HTTP Error Status: ${res.status} - ${res.statusText}`);
       }
 
       const data = await res.json();
 
       if (data && data.answer) {
-        // Strip markdown asterisks on the frontend
         const cleanAnswer = String(data.answer).replace(/\*\*/g, '');
-        
-        // Append the new question and clean answer to the history list
         setChatHistory((prev) => [...prev, { question: currentQuery, answer: cleanAnswer }]);
       } else {
         setChatHistory((prev) => [
@@ -57,46 +74,94 @@ function App() {
       }
     } catch (error) {
       console.error("Network bridge failure detail:", error);
-      setChatHistory((prev) => [
-        ...prev, 
-        { question: currentQuery, answer: `Error: ${error.message || 'Failed to connect to backend.'}` }
-      ]);
+      setErrorDetails({
+        name: error.name,
+        message: error.message,
+        targetUrl: targetUrl,
+        hint: "1. Confirm 'python3 app.py' is active on EC2. 2. Verify Security Groups accept Port 8000. 3. Access the S3 link over http:// rather than https:// to prevent Mixed Content protocol drops."
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleClearChat = () => {
+    setChatHistory([]);
+    setErrorDetails(null);
+    setQuery('');
+  };
+
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0', boxSizing: 'border-box' }}>
+      
+      {/* INJECTS STYLESHEET REGISTRY DYNAMICALLY TO FORCE LIGHT BLUE INLINE PLACEHOLDER COLOR */}
+      <style>{`
+        .custom-chat-input::placeholder {
+          color: #90caf9 !important; /* Premium Light Blue Color Value */
+          opacity: 0.85;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
         
-        <h2 style={{ borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-          <b>Kadirur village AI Chat Bot</b>   
+        <h2 style={{ paddingBottom: '10px', textAlign: 'center', color: '#007bff' }}>
+          <b>Kadirur village chat bot</b>
         </h2>
-     
+      
         {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
-          {chatHistory.map((chat, index) => (
-            <div key={index} style={{ marginBottom: '25px' }}>
-              
-              {/* User Question Box */}
-              <div style={{ background: '#222', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #444' }}>
-                <strong style={{ color: '#aaa', fontSize: '12px' }}>Your Question:</strong>
-                <p style={{ margin: '5px 0 0 0', color: '#fff', fontSize: '15px' }}>{chat.question}</p>
-              </div>
+          {chatHistory.map((chat, index) => {
+            const parts = chat.answer.split(/\n?\s*---\s*\n?/);
+            const englishReply = parts[0] ? parts[0].trim() : '';
+            const malayalamReply = parts[1] ? parts[1].trim() : '';
 
-              {/* AI Answer Box */}
-              <div style={{ background: '#1e1e1e', padding: '15px', borderRadius: '6px', border: '1px solid #333' }}>
-                <strong style={{ color: '#007bff', fontSize: '12px' }}>Answer Output:</strong>
-                <p style={{ whiteSpace: 'pre-wrap', marginTop: '5px', marginBottom: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
-                  {chat.answer}
-                </p>
-              </div>
+            return (
+              <div key={index} style={{ marginBottom: '25px' }}>
+                
+                {/* User Question Box */}
+                <div style={{ background: '#222', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #444' }}>
+                  {/* FIXED: Color updated here to matching theme blue (#007bff) */}
+                  <strong style={{ color: '#007bff', fontSize: '12px' }}>Your Question:</strong>
+                  <p style={{ margin: '5px 0 0 0', color: '#fff', fontSize: '15px' }}>{chat.question}</p>
+                </div>
 
+                {/* AI Answer Box Layout Wrapper */}
+                <div style={{ background: '#1e1e1e', padding: '15px', borderRadius: '6px', border: '1px solid #333' }}>
+                  
+                  {/* English Response Container Block */}
+                  <strong style={{ color: '#007bff', fontSize: '12px' }}>English Response:</strong>
+                  <p style={{ whiteSpace: 'pre-wrap', marginTop: '5px', marginBottom: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
+                    {englishReply || chat.answer}
+                  </p>
+
+                  {/* Malayalam response section rendered explicitly with a custom separator line and header */}
+                  {malayalamReply && (
+                    <>
+                      <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '15px 0' }} />
+                      <strong style={{ color: '#007bff', fontSize: '12px', display: 'block', marginBottom: '5px' }}>മലയാളം മറുപടി:</strong>
+                      <p style={{ whiteSpace: 'pre-wrap', margin: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
+                        {malayalamReply}
+                      </p>
+                    </>
+                  )}
+                </div>
+
+              </div>
+            );
+          })}
+
+          {errorDetails && (
+            <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#2d1a1a', border: '1px solid #c53030', borderRadius: '6px', color: '#fc8181' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#fff' }}>⚠️ Network Intercept Failure</h4>
+              <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Fault Type:</strong> {errorDetails.name}</p>
+              <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Message:</strong> {errorDetails.message}</p>
+              <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Target URL:</strong> <code>{errorDetails.targetUrl}</code></p>
+              <p style={{ margin: '12px 0 0 0', fontSize: '12.5px', color: '#cbd5e0', borderTop: '1px dashed #c53030', paddingTop: '8px', lineHeight: '1.4' }}>
+                return targetUrl;
+              </p>
             </div>
-          ))}
+          )}
 
-          {/* Inline Loading / Processing State Indicator Box */}
           {loading && (
             <div style={{ background: '#1e1e1e', padding: '15px', borderRadius: '6px', border: '1px solid #333', marginBottom: '25px' }}>
               <strong style={{ color: '#007bff', fontSize: '12px' }}>Answer Output:</strong>
@@ -109,23 +174,58 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* PERSISTENT INPUT ROW SITUATED DIRECTLY BENEATH GENERATED RESPONSES */}
+        {/* PERSISTENT INPUT ROW WITH DYNAMIC TIMED PLACEHOLDER AND VISUAL DISABLED STATES */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginTop: '20px', position: 'sticky', bottom: '20px', backgroundColor: '#121212', padding: '10px 0' }}>
           <input
             type="text"
+            className="custom-chat-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Ask a question about Kadirur..."}
-            style={{ flexGrow: 1, padding: '12px', fontSize: '15px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', outline: 'none' }}
+            placeholder={(chatHistory.length > 0 || loading) ? followUpPlaceholder : placeholderText}
             disabled={loading}
+            style={{ 
+              flexGrow: 1, 
+              padding: '12px', 
+              fontSize: '15px', 
+              backgroundColor: '#222', 
+              border: '1px solid #444', 
+              color: '#fff', 
+              borderRadius: '6px', 
+              outline: 'none',
+              opacity: loading ? 0.5 : 1,
+              cursor: loading ? 'not-allowed' : 'text',
+              transition: 'all 0.2s ease-in-out'
+            }}
           />
           <button 
             type="submit" 
             disabled={loading} 
-            style={{ padding: '0 24px', cursor: 'pointer', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '15px' }}
+            style={{ padding: '0 24px', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: loading ? '#4a5568' : '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '15px', transition: 'background-color 0.2s' }}
           >
-            Ask
+            {loading ? 'Sending...' : 'Ask'}
           </button>
+
+          {(chatHistory.length > 0 || errorDetails) && (
+            <button
+              type="button"
+              onClick={handleClearChat}
+              disabled={loading}
+              style={{
+                padding: '0 24px', 
+                cursor: loading ? 'not-allowed' : 'pointer',
+                backgroundColor: loading ? '#4a5568' : '#007bff', 
+                color: '#fff', 
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                fontSize: '15px',
+                transition: 'background-color 0.2s',
+                opacity: loading ? 0.6 : 1
+              }}
+            >
+              Clear Chat
+            </button>
+          )}
         </form>
 
       </div>
