@@ -9,11 +9,11 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
-# FIXED: Set credentials to True for flexible production web configurations
+# FIXED CORS CONFIGURATION FOR WILDCARD ORIGINS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # Must be False when allow_origins is ["*"] to prevent protocol errors
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -32,6 +32,7 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
+# INITIALIZE GOOGLE GEMINI ENGINE MODEL
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.3,
@@ -87,5 +88,5 @@ async def query_file(request: QueryRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # FIXED: Binds Uvicorn to 0.0.0.0 so it dynamically catches all external interface network hits
+    # Listens publicly across all interfaces to resolve external incoming connection targets
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
