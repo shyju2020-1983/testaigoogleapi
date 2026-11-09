@@ -25,8 +25,10 @@ function App() {
     setQuery(''); // Clear the input field instantly for a responsive feel
     setLoading(true);
 
-    const targetUrl = 'http://localhost:8000/api/query';
 
+
+
+    const targetUrl = 'http://localhost:8000/api/query';
     try {
       const res = await fetch(targetUrl, {
         method: 'POST',
@@ -69,9 +71,9 @@ function App() {
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
         
         <h2 style={{ borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-          <b>Kadirur village chat bot</b>
+          <b>Kadirur village AI Chat Bot</b>   
         </h2>
-        
+     
         {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
           {chatHistory.map((chat, index) => (
@@ -113,7 +115,7 @@ function App() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Ask a question about your text file..."}
+            placeholder={chatHistory.length > 0 ? "Ask a follow-up question..." : "Ask a question about Kadirur..."}
             style={{ flexGrow: 1, padding: '12px', fontSize: '15px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '6px', outline: 'none' }}
             disabled={loading}
           />

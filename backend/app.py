@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-
+from dotenv import load_dotenv
 # 1. INITIALIZE FASTAPI & CORS
 app = FastAPI()
 
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+load_dotenv()
 # 2. SECURE ENVIRONMENT VARIABLE INTEGRATION
 # Pulls the key dynamically from your EC2 Linux instance memory (setup via export command)
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
