@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
-# FULLY COMPLIANT MIDDLEWARE LAYER
+# FULLY OPEN CORS PERMISSIONS FOR DIRECT ACCESS LOOP
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,12 +27,12 @@ if not GOOGLE_API_KEY:
 def read_sample_file(file_path: str = "sample.txt") -> str:
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
-            f.write("Retrieval-Augmented Generation (RAG) helps LLMs access external knowledge bases without retraining.")
+            f.write("Kadirur Village Office handles decentralized land mutation mappings, village development project registers, and local community certificate provisions.")
     
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-# KEEPING YOUR EXACT GOOGLE GENERATIVE AI MODEL RULES
+# STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.3,
@@ -60,9 +60,13 @@ prompt_template = ChatPromptTemplate.from_messages([
 class QueryRequest(BaseModel):
     question: str
 
+@app.get("/")
+async def root():
+    return {"status": "online", "message": "Kadirur Chatbot direct API interface is active"}
+
 @app.post("/api/query")
 async def query_file(request: QueryRequest):
-    print(f"📥 Received proxy-relayed query: {request.question}")
+    print(f"📥 Received direct incoming query: {request.question}")
     try:
         context_data = read_sample_file("sample.txt")
         
@@ -84,9 +88,9 @@ async def query_file(request: QueryRequest):
     except Exception as e:
         error_msg = str(e)
         print(f"❌ BACKEND EXCEPTION: {error_msg}", file=sys.stderr)
-        raise HTTPException(status_code=500, detail=f"Backend Error: {error_msg}")
+        return {"answer": f"Backend Error: {error_msg}"}
 
 if __name__ == "__main__":
     import uvicorn
-    # Bind back to public port 8000 directly to accept connection inputs from the proxy
+    # Host '0.0.0.0' binds Uvicorn to all interfaces, allowing direct calls via Port 8000
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
