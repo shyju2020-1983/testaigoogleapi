@@ -73,17 +73,19 @@ system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
     "1. Prioritize provided Context. If unrelated, use general knowledge.\n"
-    "2. You must provide your response in both English and Malayalam script. Never output Hindi or Devanagari characters.\n" # 👈 ai made change
-    "3. Format exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation].\n"
-    "4. Never use markdown asterisks (**) or bold text indicators anywhere.\n\n"
+    "2. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"  # 👈 ai made change
+    "3. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"  # 👈 ai made change
+    "4. Format exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation].\n"
+    "5. Never use markdown asterisks (**) or bold text indicators anywhere.\n\n"
     "EXAMPLE FORMAT:\n"
-    "User: Hello\n"
+    "User: Who is the Prime Minister of India?\n"
     "Response:\n"
-    "Hello\n"
+    "The Prime Minister of India is Narendra Modi.\n"
     "---\n"
-    "ഹലോ\n\n" # 👈 ai made change (Few-shot example forces Malayalam script anchors)
+    "ഇന്ത്യയുടെ പ്രധാനമന്ത്രി നരേന്ദ്ര മോദിയാണ്.\n\n"  # 👈 ai made change (Anchors the exact phrase you want)
     "Context:\n{context}"
 )
+
 
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
