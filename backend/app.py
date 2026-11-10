@@ -37,14 +37,13 @@ llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.1,
     google_api_key=GOOGLE_API_KEY,
-     max_output_tokens=1024,
-     extra_body={
+    max_output_tokens=1024,
+    extra_body={
         "thinking_config": {
             "thinking_level": "MINIMAL"  # 👈 Disables deep reasoning lag for pure speed
-   } }
+        } 
+    }
 )
-
-
 
 system_prompt = (
     "You are a helpful assistant for the Kadirur village chatbot. "
@@ -86,12 +85,21 @@ async def query_file(request: QueryRequest):
         response = llm.invoke(messages)
         print("📤 Google Gemini replied successfully!")
         
+        # ai made change
         plain_text_answer = response.content
         if isinstance(plain_text_answer, list) and len(plain_text_answer) > 0:
-            if isinstance(plain_text_answer, dict) and "text" in plain_text_answer:
-                plain_text_answer = plain_text_answer["text"]
+            first_element = plain_text_answer[0]
+            if isinstance(first_element, dict) and "text" in first_element:
+                plain_text_answer = first_element["text"]
+            else:
+                plain_text_answer = str(first_element)
+        else:
+            plain_text_answer = str(plain_text_answer)
+            
+        # ai made change
+        plain_text_answer = plain_text_answer.strip('[]"\'')
         
-        return {"answer": str(plain_text_answer)}
+        return {"answer": plain_text_answer}
         
     except Exception as e:
         error_msg = str(e)
