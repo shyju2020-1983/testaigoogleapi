@@ -35,9 +35,15 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
-    temperature=0.3,
-    google_api_key=GOOGLE_API_KEY
+    temperature=0.1,
+    google_api_key=GOOGLE_API_KEY,
+     max_output_tokens=1024,
+     extra_body={
+        "thinking_config": {
+            "thinking_level": "MINIMAL"  # 👈 Disables deep reasoning lag for pure speed
+   } }
 )
+
 
 
 system_prompt = (
