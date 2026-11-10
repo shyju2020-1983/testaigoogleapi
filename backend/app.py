@@ -56,6 +56,7 @@ system_prompt = (
     "3. You must provide your response in both English and Malayalam.\n"
     "4. Write the English response first, followed exactly by the separator line '---', followed by the Malayalam translation.\n"
     "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
+    "6. Be concise. Provide direct facts immediately. Skip all introductory filler and polite conversational preambles.\n"
     "Context:\n{context}"
 )
 
