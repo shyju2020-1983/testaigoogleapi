@@ -35,22 +35,36 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
-    temperature=0.3,
-    google_api_key=GOOGLE_API_KEY
+    temperature=0.1,  # 👈 Dropped to 0.1 for high accuracy and factual grounding
+    google_api_key=GOOGLE_API_KEY,
+    max_output_tokens=1024,  # 👈 Limits excessive output generation to save time
+    extra_body={
+        "thinking_config": {
+            "thinking_level": "MINIMAL"  # 👈 Disables deep reasoning lag for pure speed
+        }
+    }
 )
 
+# Streamlined and structured system prompt to force direct answers without filler
 system_prompt = (
-    "You are a helpful assistant for the Kadirur village chatbot. "
-    "You have access to a local knowledge base provided below in the Context section.\n\n"
-    "INSTRUCTIONS:\n"
-    "1. If the user's question relates to the provided Context, prioritize using that context to answer.\n"
-    "2. If the user asks a general knowledge question, greetings, or something outside the context, "
-    "use your own extensive general knowledge base to answer accurately.\n"
-    "3. You must provide your response in both English and Malayalam.\n"
-    "4. Write the English response first, followed exactly by the separator line '---', followed by the Malayalam translation.\n"
-    "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
+    "You are the official Kadirur Village Chatbot assistant.\n"
+    "CRITICAL RULES FOR ACCURACY & SPEED:\n"
+    "1. Base answers on the Context below if relevant. Otherwise, use general knowledge.\n"
+    "2. Be concise. Provide direct facts immediately. Skip all introductory filler and polite conversational preambles.\n"
+    "3. Format exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation].\n"
+    "4. NEVER use markdown asterisks (**) or bold text indicators anywhere.\n\n"
     "Context:\n{context}"
 )
+Use code with caution.
+
+What Changed & Why:
+
+• Lowered Temperature (0.3 to 0.1): Dropping the temperature makes the model deterministic. It prevents it from wandering into creative wording, which boosts both structural accuracy and generation speed.
+• thinking_level: "MINIMAL": This bypasses the multi-step reasoning pathway inside Gemini 3.5, pulling the response time down to its fastest possible threshold.
+• Prompt Compression: Trimmed conversational fluff from your instructions. Shorter prompts take fewer milliseconds to process.
+• Direct Instruction (Skip all introductory filler): Models often generate text like "Based on the context provided, here is the information...". Eliminating these extra words significantly slashes your Time-to-First-Token (TTFT).
+Are you currently using standard execution (llm.invoke()) or are you streaming the tokens to your UI using llm.stream()? Switching your frontend and backend to streaming will make this feel instant to your users. Let me know if you want the code to implement that!
+
 
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
