@@ -33,12 +33,13 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
         return file.read()
 
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
-# llm = ChatGoogleGenerativeAI(
-#     model="gemini-3.5-flash-lite",
-#     temperature=0.3,
-#     google_api_key=GOOGLE_API_KEY
-# )
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash-lite",
+    temperature=0.3,
+    google_api_key=GOOGLE_API_KEY
+)
 
+# base
 # system_prompt = (
 #     "You are a helpful assistant for the Kadirur village chatbot. "
 #     "You have access to a local knowledge base provided below in the Context section.\n\n"
@@ -51,31 +52,32 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
 #     "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
 #     "Context:\n{context}"
 # )
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash-lite",
-    temperature=0.1,
-    google_api_key=GOOGLE_API_KEY,
-    max_output_tokens=1024,
-    extra_body={
-        "thinking_config": {
-            "thinking_level": "MINIMAL"  # 👈 Disables deep reasoning lag for pure speed
-        } 
-    }
-)
 
+# second :
+# system_prompt = (
+#     "You are a helpful assistant for the Kadirur village chatbot. "
+#     "You have access to a local knowledge base provided below in the Context section.\n\n"
+#     "INSTRUCTIONS:\n"
+#     "1. If the user's question relates to the provided Context, prioritize using that context to answer.\n"
+#     "2. If the user asks a general knowledge question, greetings, or something outside the context, "
+#     "use your own extensive general knowledge base to answer accurately.\n"
+#     "3. You must provide your response in both English and Malayalam.\n"
+#     "4. Write the English response first, followed exactly by the separator line '---', followed by the Malayalam translation.\n"
+#     "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
+#     "6. Be concise. Provide direct facts immediately. Skip all introductory filler and polite conversational preambles.\n"
+#     "Context:\n{context}"
+# )
+# ai suggested 
 system_prompt = (
-    "You are a helpful assistant for the Kadirur village chatbot. "
-    "You have access to a local knowledge base provided below in the Context section.\n\n"
-    "INSTRUCTIONS:\n"
-    "1. If the user's question relates to the provided Context, prioritize using that context to answer.\n"
-    "2. If the user asks a general knowledge question, greetings, or something outside the context, "
-    "use your own extensive general knowledge base to answer accurately.\n"
-    "3. You must provide your response in both English and Malayalam.\n"
-    "4. Write the English response first, followed exactly by the separator line '---', followed by the Malayalam translation.\n"
-    "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
-    "6. Be concise. Provide direct facts immediately. Skip all introductory filler and polite conversational preambles.\n"
+    "You are the Kadirur village chatbot. Respond concisely without introductory filler.\n"
+    "CRITICAL RULES:\n"
+    "1. Prioritize provided Context. If unrelated, use general knowledge.\n"
+    "2. Even if the question is repeated, always generate a full answer from scratch.\n"
+    "3. Format every response exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation]. Never skip the translation.\n"
+    "4. Never use markdown asterisks (**) or bold text indicators.\n\n"
     "Context:\n{context}"
 )
+
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
     ("human", "{input}"),
