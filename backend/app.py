@@ -37,26 +37,21 @@ llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.1,
     google_api_key=GOOGLE_API_KEY,
-     max_output_tokens=1024,
-     extra_body={
+    max_output_tokens=500,  # 👈 Decreased from 1024 to 500 for much faster generation speed
+    extra_body={
         "thinking_config": {
-            "thinking_level": "MINIMAL"  # 👈 Disables deep reasoning lag for pure speed
-   } }
+            "thinking_level": "MINIMAL"  # Disables deep reasoning lag for pure speed
+        }
+    }
 )
 
-
-
+# 👈 Streamlined and compressed to reduce processing latency
 system_prompt = (
-    "You are a helpful assistant for the Kadirur village chatbot. "
-    "You have access to a local knowledge base provided below in the Context section.\n\n"
-    "INSTRUCTIONS:\n"
-    "1. If the user's question relates to the provided Context, prioritize using that context to answer.\n"
-    "2. If the user asks a general knowledge question, greetings, or something outside the context, "
-    "use your own extensive general knowledge base to answer accurately.\n"
-    "3. You must provide your response in both English and Malayalam.\n"
-    "4. Write the English response first, followed exactly by the separator line '---', followed by the Malayalam translation.\n"
-    "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
-    "6. Be concise. Provide direct facts immediately. Skip all introductory filler and polite conversational preambles.\n"
+    "You are the Kadirur village chatbot. Respond concisely without introductory filler.\n"
+    "RULES:\n"
+    "1. Prioritize provided Context. If unrelated, use general knowledge.\n"
+    "2. Format exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation].\n"
+    "3. Never use markdown asterisks (**) or bold text indicators.\n\n"
     "Context:\n{context}"
 )
 
@@ -72,6 +67,7 @@ class QueryRequest(BaseModel):
 async def root():
     return {"status": "online", "message": "Kadirur Chatbot direct API interface is active"}
 
+# 👈 FIXED ENDPOINT FUNCTION BELOW
 @app.post("/api/query")
 async def query_file(request: QueryRequest):
     print(f"📥 Received direct incoming query: {request.question}")
@@ -86,12 +82,25 @@ async def query_file(request: QueryRequest):
         response = llm.invoke(messages)
         print("📤 Google Gemini replied successfully!")
         
-        plain_text_answer = response.content
-        if isinstance(plain_text_answer, list) and len(plain_text_answer) > 0:
-            if isinstance(plain_text_answer, dict) and "text" in plain_text_answer:
-                plain_text_answer = plain_text_answer["text"]
+        raw_content = response.content
         
-        return {"answer": str(plain_text_answer)}
+        # 1. Unpack list objects safely if LangChain passes a chunk collection
+        if isinstance(raw_content, list):
+            if len(raw_content) > 0:
+                first_item = raw_content[0]
+                if isinstance(first_item, dict) and "text" in first_item:
+                    plain_text_answer = str(first_item["text"])
+                else:
+                    plain_text_answer = str(first_item)
+            else:
+                plain_text_answer = ""
+        else:
+            plain_text_answer = str(raw_content)
+        
+        # 2. Strict cleanup fallback to strip out stray brackets/quotes if they persist
+        plain_text_answer = plain_text_answer.strip('[]"\'')
+        
+        return {"answer": plain_text_answer}
         
     except Exception as e:
         error_msg = str(e)
