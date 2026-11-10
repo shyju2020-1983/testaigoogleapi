@@ -35,14 +35,8 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
-    temperature=0.1,
-    google_api_key=GOOGLE_API_KEY,
-    max_output_tokens=1024,
-    extra_body={
-        "thinking_config": {
-            "thinking_level": "MINIMAL"  # 👈 Disables deep reasoning lag for pure speed
-        } 
-    }
+    temperature=0.3,
+    google_api_key=GOOGLE_API_KEY
 )
 
 system_prompt = (
@@ -55,7 +49,6 @@ system_prompt = (
     "3. You must provide your response in both English and Malayalam.\n"
     "4. Write the English response first, followed exactly by the separator line '---', followed by the Malayalam translation.\n"
     "5. Do not use markdown asterisks (**) or bold text indicators anywhere.\n\n"
-    "6. Be concise. Provide direct facts immediately. Skip all introductory filler and polite conversational preambles.\n"
     "Context:\n{context}"
 )
 
@@ -85,21 +78,12 @@ async def query_file(request: QueryRequest):
         response = llm.invoke(messages)
         print("📤 Google Gemini replied successfully!")
         
-        # ai made change
         plain_text_answer = response.content
         if isinstance(plain_text_answer, list) and len(plain_text_answer) > 0:
-            first_element = plain_text_answer[0]
-            if isinstance(first_element, dict) and "text" in first_element:
-                plain_text_answer = first_element["text"]
-            else:
-                plain_text_answer = str(first_element)
-        else:
-            plain_text_answer = str(plain_text_answer)
-            
-        # ai made change
-        plain_text_answer = plain_text_answer.strip('[]"\'')
+            if isinstance(plain_text_answer, dict) and "text" in plain_text_answer:
+                plain_text_answer = plain_text_answer["text"]
         
-        return {"answer": plain_text_answer}
+        return {"answer": str(plain_text_answer)}
         
     except Exception as e:
         error_msg = str(e)
