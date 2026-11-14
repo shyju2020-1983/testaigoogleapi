@@ -5,11 +5,11 @@ function App() {
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
-  
+
   // ANIMATED LIGHT BLUE PLACEHOLDER ROTATION STATES
   const [placeholderText, setPlaceholderText] = useState('Ask question about kadirur');
   const [followUpPlaceholder, setFollowUpPlaceholder] = useState('Ask follow-up question');
-  
+
   useEffect(() => {
     let isEnglish = true;
 
@@ -23,9 +23,9 @@ function App() {
         setPlaceholderText('കതിരൂരിനെക്കുറിച്ച് ചോദ്യം ചോദിക്കാം');
         setFollowUpPlaceholder('വീണ്ടും തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
       }
-    }, 2000); // Cycles every 2000ms (2 seconds)
+    }, 2000);
 
-    return () => clearInterval(interval); // Clean up timer on unmount
+    return () => clearInterval(interval);
   }, []);
 
   const messagesEndRef = useRef(null);
@@ -38,18 +38,37 @@ function App() {
     scrollToBottom();
   }, [chatHistory, loading, errorDetails]);
 
+  const linkify = (text) =>
+    text?.split(/(https?:\/\/[^\s<>"']+)/g).map((part, i) => {
+      if (!part.startsWith('http')) return part;
+      const cleanUrl = part.replace(/[\]'.,;!?]+$/, '');
+      return (
+        <a
+          key={i}
+          href={cleanUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#90caf9', textDecoration: 'underline', wordBreak: 'break-all' }}
+        >
+          {cleanUrl}
+        </a>
+      );
+    });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     const currentQuery = query;
-    setQuery(''); 
+    setQuery('');
     setLoading(true);
     setErrorDetails(null);
 
-    const ec2PublicIp = "13.233.119.28"; 
+    const ec2PublicIp = "13.233.119.28";
     const targetUrl = `http://${ec2PublicIp}:8000/api/query`;
-  // const targetUrl = 'http://localhost:8000/api/query';
+
+    // Below code for local running 
+// const targetUrl = 'http://localhost:8000/api/query';
     try {
       const res = await fetch(targetUrl, {
         method: 'POST',
@@ -68,7 +87,7 @@ function App() {
         setChatHistory((prev) => [...prev, { question: currentQuery, answer: cleanAnswer }]);
       } else {
         setChatHistory((prev) => [
-          ...prev, 
+          ...prev,
           { question: currentQuery, answer: 'Error: Received empty or unmappable response payload.' }
         ]);
       }
@@ -93,21 +112,18 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0', boxSizing: 'border-box' }}>
-      
-      {/* INJECTS STYLESHEET REGISTRY DYNAMICALLY TO FORCE LIGHT BLUE INLINE PLACEHOLDER COLOR */}
       <style>{`
         .custom-chat-input::placeholder {
-          color: #90caf9 !important; /* Premium Light Blue Color Value */
+          color: #90caf9 !important;
           opacity: 0.85;
         }
       `}</style>
 
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
-        
         <h2 style={{ paddingBottom: '10px', textAlign: 'center', color: '#007bff' }}>
-          <b>Kadirur village chat bot</b>
+          <b>Kadirur village chatbot</b>
         </h2>
-      
+
         {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
           {chatHistory.map((chat, index) => {
@@ -117,35 +133,31 @@ function App() {
 
             return (
               <div key={index} style={{ marginBottom: '25px' }}>
-                
                 {/* User Question Box */}
                 <div style={{ background: '#222', padding: '12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #444' }}>
-                  {/* FIXED: Color updated here to matching theme blue (#007bff) */}
                   <strong style={{ color: '#007bff', fontSize: '12px' }}>Your Question:</strong>
                   <p style={{ margin: '5px 0 0 0', color: '#fff', fontSize: '15px' }}>{chat.question}</p>
                 </div>
 
                 {/* AI Answer Box Layout Wrapper */}
                 <div style={{ background: '#1e1e1e', padding: '15px', borderRadius: '6px', border: '1px solid #333' }}>
-                  
                   {/* English Response Container Block */}
                   <strong style={{ color: '#007bff', fontSize: '12px' }}>English Response:</strong>
-                  <p style={{ whiteSpace: 'pre-wrap', marginTop: '5px', marginBottom: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
-                    {englishReply || chat.answer}
+                  <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', marginTop: '5px', marginBottom: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
+                    {linkify(englishReply || chat.answer)}
                   </p>
 
-                  {/* Malayalam response section rendered explicitly with a custom separator line and header */}
+                  {/* Malayalam response section */}
                   {malayalamReply && (
                     <>
                       <hr style={{ border: 'none', borderTop: '1px solid #333', margin: '15px 0' }} />
                       <strong style={{ color: '#007bff', fontSize: '12px', display: 'block', marginBottom: '5px' }}>മലയാളം മറുപടി:</strong>
-                      <p style={{ whiteSpace: 'pre-wrap', margin: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
-                        {malayalamReply}
+                      <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: '0', color: '#e0e0e0', fontWeight: '500', lineHeight: '1.5', fontSize: '15px' }}>
+                        {linkify(malayalamReply)}
                       </p>
                     </>
                   )}
                 </div>
-
               </div>
             );
           })}
@@ -157,7 +169,7 @@ function App() {
               <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Message:</strong> {errorDetails.message}</p>
               <p style={{ margin: '4px 0', fontSize: '14px' }}><strong>Target URL:</strong> <code>{errorDetails.targetUrl}</code></p>
               <p style={{ margin: '12px 0 0 0', fontSize: '12.5px', color: '#cbd5e0', borderTop: '1px dashed #c53030', paddingTop: '8px', lineHeight: '1.4' }}>
-                return targetUrl;
+                {errorDetails.hint}
               </p>
             </div>
           )}
@@ -170,11 +182,11 @@ function App() {
               </p>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
-        {/* PERSISTENT INPUT ROW WITH DYNAMIC TIMED PLACEHOLDER AND VISUAL DISABLED STATES */}
+        {/* PERSISTENT INPUT ROW */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginTop: '20px', position: 'sticky', bottom: '20px', backgroundColor: '#121212', padding: '10px 0' }}>
           <input
             type="text"
@@ -183,26 +195,26 @@ function App() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={(chatHistory.length > 0 || loading) ? followUpPlaceholder : placeholderText}
             disabled={loading}
-            style={{ 
-              flexGrow: 1, 
-              padding: '12px', 
-              fontSize: '15px', 
-              backgroundColor: '#222', 
-              border: '1px solid #444', 
-              color: '#fff', 
-              borderRadius: '6px', 
+            style={{
+              flexGrow: 1,
+              padding: '12px',
+              fontSize: '15px',
+              backgroundColor: '#222',
+              border: '1px solid #444',
+              color: '#fff',
+              borderRadius: '6px',
               outline: 'none',
               opacity: loading ? 0.5 : 1,
               cursor: loading ? 'not-allowed' : 'text',
               transition: 'all 0.2s ease-in-out'
             }}
           />
-          <button 
-            type="submit" 
-            disabled={loading} 
-            style={{ padding: '0 24px', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: loading ? '#4a5568' : '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '15px', transition: 'background-color 0.2s' }}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ padding: '12px', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: loading ? '#4a5568' : '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '15px', transition: 'background-color 0.2s' }}
           >
-            {loading ? 'Sending...' : 'Ask'}
+            {loading ? 'Searching...' : 'Ask'}
           </button>
 
           {(chatHistory.length > 0 || errorDetails) && (
@@ -211,10 +223,10 @@ function App() {
               onClick={handleClearChat}
               disabled={loading}
               style={{
-                padding: '0 24px', 
+                padding: '5px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                backgroundColor: loading ? '#4a5568' : '#007bff', 
-                color: '#fff', 
+                backgroundColor: loading ? '#4a5568' : '#007bff',
+                color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
                 fontWeight: 'bold',
@@ -223,11 +235,10 @@ function App() {
                 opacity: loading ? 0.6 : 1
               }}
             >
-              Clear Chat
+              Clear
             </button>
           )}
         </form>
-
       </div>
     </div>
   );
