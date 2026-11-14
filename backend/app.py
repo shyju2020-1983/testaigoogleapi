@@ -23,7 +23,11 @@ load_dotenv()
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
+# Below 2 line code is for local envirnment execution 
+
 if not GOOGLE_API_KEY:
+
+
     raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY environment variable is missing on this EC2 instance!")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -51,6 +55,8 @@ def get_matching_urls(context: str, question: str) -> list[str]:
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.3,
+    # Below code for local running
+    # google_api_key=MY_SECRET_KEY
     google_api_key=GOOGLE_API_KEY
 )
 
