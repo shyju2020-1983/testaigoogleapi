@@ -71,11 +71,7 @@ system_prompt = (
     "6. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "7. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character into both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
     "EXAMPLE FORMAT:\n"
-    "User: Who is the Prime Minister of India?\n"
-    "Response:\n"
-    "The Prime Minister of India is Narendra Modi.\n"
-    "---\n"
-    "ഇന്ത്യയുടെ പ്രധാനമന്ത്രി നരേന്ദ്ര മോദിയാണ്.\n\n"
+   "8. If the answer is missing from DATA, reply strictly: "Information not available.""
     "Context:\n{context}"
 )
 
