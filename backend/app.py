@@ -87,7 +87,6 @@ class QueryRequest(BaseModel):
 async def query_endpoint(request: QueryRequest):
     try:
         context_data = read_sample_file()
-        matched_urls = get_matching_urls(context_data, request.question)
 
         response = chain.invoke({
             "context": context_data,
@@ -100,9 +99,17 @@ async def query_endpoint(request: QueryRequest):
             else str(response.content)
         )
 
+        # Dynamically attach any URL from the matching section in sample.txt if Gemini left it out
+        matched_urls = get_matching_urls(context_data, request.question)
         missing_urls = [u for u in matched_urls if u not in answer_text]
+
         if missing_urls:
-            answer_text += "\n\nLink: " + "\n".join(missing_urls)
+            url_block = "\nDirections / Link: " + "\n".join(missing_urls)
+            if "---" in answer_text:
+                eng, mal = answer_text.split("---", 1)
+                answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
+            else:
+                answer_text += url_block
 
         return {"answer": answer_text}
     except Exception as e:
