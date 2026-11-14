@@ -26,7 +26,10 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY environment variable is missing on this EC2 instance!")
 
-def read_sample_file(file_path: str = "sample.txt") -> str:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SAMPLE_FILE_PATH = os.path.join(BASE_DIR, "sample.txt")
+
+def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
             f.write("Kadirur Village Office handles decentralized land mutation mappings, village development project registers, and local community certificate provisions.")
@@ -34,11 +37,15 @@ def read_sample_file(file_path: str = "sample.txt") -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-def extract_urls(text: str) -> list[str]:
-    # Finds all http:// and https:// links in sample.txt and strips trailing punctuation
-    raw_urls = re.findall(r'https?://[^\s<>"{}|\\^`\[\]]+', text)
-    cleaned_urls = [url.rstrip('.,;:!?)') for url in raw_urls]
-    return list(dict.fromkeys(cleaned_urls))  # Removes duplicates while keeping order
+def get_matching_urls(context: str, question: str) -> list[str]:
+    blocks = re.split(r'\n\s*\n', context.strip())
+    q_words = set(re.findall(r'\w+', question.lower()))
+    matched_urls = []
+    for block in blocks:
+        if q_words & set(re.findall(r'\w+', block.lower())):
+            urls = re.findall(r'https?://[^\s<>"\']+', block)
+            matched_urls.extend(u.rstrip('.,;:!?)') for u in urls)
+    return list(dict.fromkeys(matched_urls))
 
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
@@ -46,30 +53,7 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.3,
     google_api_key=GOOGLE_API_KEY
 )
-// 14- below used for directions display
-# system_prompt = (
-#     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
-#     "CRITICAL RULES:\n"
-#     "1. Prioritize provided Context. If unrelated, use general knowledge.\n"
-#     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
-#     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
-#     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
-#     "5. Format exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation].\n"
-#     "6. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
-#     "7. LINK RULE: Always include relevant full URLs from the Context formatted as clickable Markdown links like [Website Name](https://example.com) in both English and Malayalam.\n\n"
-#     "EXAMPLE FORMAT:\n"
-#     "User: Who is the Prime Minister of India?\n"
-#     "Response:\n"
-#     "The Prime Minister of India is Narendra Modi.\n"
-#     "---\n"
-#     "ഇന്ത്യയുടെ പ്രധാനമന്ത്രി നരേന്ദ്ര മോദിയാണ്.\n\n"
-#     "User: Where can I apply for a certificate?\n"
-#     "Response:\n"
-#     "You can apply online at [Kadirur Village Portal](https://example.com).\n"
-#     "---\n"
-#     "നിങ്ങൾക്ക് [കതിരൂർ വില്ലേജ് പോർട്ടൽ](https://example.com) വഴി ഓൺലൈനായി അപേക്ഷിക്കാം.\n\n"
-#     "Context:\n{context}"
-# )
+
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
@@ -81,42 +65,49 @@ system_prompt = (
     "6. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "7. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character into both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
     "EXAMPLE FORMAT:\n"
-    "Context:\n"
-    "Office - Kadirur Center\n"
-    "Phone - 12345\n"
-    "Directions - https://example.com\n"
-    "User: Kadirur center details\n"
+    "User: Who is the Prime Minister of India?\n"
     "Response:\n"
-    "Name: Kadirur Center\n"
-    "Phone: 12345\n"
-    "Directions: https://example.com\n"
+    "The Prime Minister of India is Narendra Modi.\n"
     "---\n"
-    "പേര്: കതിരൂർ സെന്റർ\n"
-    "ഫോൺ: 12345\n"
-    "ദിശകൾ: https://example.com\n\n"
+    "ഇന്ത്യയുടെ പ്രധാനമന്ത്രി നരേന്ദ്ര മോദിയാണ്.\n\n"
     "Context:\n{context}"
 )
 
+prompt_template = ChatPromptTemplate.from_messages([
+    ("system", system_prompt),
+    ("human", "{question}")
+])
 
 chain = prompt_template | llm
 
-class ChatRequest(BaseModel):
+class QueryRequest(BaseModel):
     question: str
 
-@app.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+@app.post("/api/query")
+async def query_endpoint(request: QueryRequest):
     try:
-        context_data = read_sample_file("sample.txt")
-        all_urls = extract_urls(context_data)
+        context_data = read_sample_file()
+        matched_urls = get_matching_urls(context_data, request.question)
 
         response = chain.invoke({
             "context": context_data,
             "question": request.question
         })
 
-        return {
-            "reply": response.content,
-            "urls": all_urls
-        }
+        answer_text = (
+            "".join(b.get("text", "") for b in response.content if isinstance(b, dict))
+            if isinstance(response.content, list)
+            else str(response.content)
+        )
+
+        missing_urls = [u for u in matched_urls if u not in answer_text]
+        if missing_urls:
+            answer_text += "\n\nLink: " + "\n".join(missing_urls)
+
+        return {"answer": answer_text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
