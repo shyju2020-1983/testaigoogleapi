@@ -1578,7 +1578,7 @@ Pooja Store in Kadirur :
 
 ### Grooms
 
-name - Sunil
+• name - Sunil
 age - 26
 work - officer
 star - avittam
@@ -1586,7 +1586,7 @@ contact - 66676
 demand - above 23
 Location Link - ht
 
-name - sunil 2
+• name - sunil 2
 age - 26
 work - officer
 star - avittam
@@ -1596,14 +1596,14 @@ Location Link - ht
 
 ### Brides
 
-name - rinsi babu
+• name - rinsi babu
 age -32
 work - officer
 star - avittam
 contact - 55
 demand - above 35 
 
-name - rinsi babu 2
+• name - rinsi babu 2
 age -32
 work - officer
 star - avittam
