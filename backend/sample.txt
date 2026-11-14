@@ -1619,7 +1619,7 @@ work - officer
 star - avittam
 contact - 666
 demand - above 23
-Location Link - https://www.google.com
+Location Link - https://google.com
 
 
 Job vacancy / opportunity in Kadirur :
