@@ -1612,14 +1612,14 @@ star - avittam
 contact - 55
 demand - above 35 
 
-Groom - 
+Groom - Sunil
 name - Sunil
 age - 26
 work - officer
 star - avittam
 contact - 666
 demand - above 23
-Profile Link - https://www.google.com
+Location Link - https://www.google.com
 
 
 Job vacancy / opportunity in Kadirur :
