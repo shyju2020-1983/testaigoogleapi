@@ -1576,7 +1576,7 @@ Pooja Store in Kadirur :
 
 ## Matrimony Listings in Kadirur (Kathiroor)
 
-Grooms -
+Grooms :
 
 name - Sunil
 age - 26
@@ -1594,7 +1594,7 @@ contact - 66676
 demand - above 23
 Location Link - ht
 
- Brides -
+ Brides :
 
 name - rinsi babu
 age -32
