@@ -72,30 +72,25 @@ Located further north at a distance of about 24–28 km, serving as a major prim
 Directions - https://www.google.com/maps/place/Kannur+Railway+Station/@11.8718027,75.0626707,11z/data=!4m20!1m13!4m12!1m3!2m2!1d75.5171328!2d11.780096!1m6!1m2!1s0x3ba43d5320a1b799:0x505ae21d03a2eb4!2sKannur+Railway+Station,+V9C9%2BP39,+Railway+station,+Kannur+Railway+Station+Rd,+Kannur,+Keralam+670001!2m2!1d75.3675514!2d11.8718063!3e0!3m5!1s0x3ba43d5320a1b799:0x505ae21d03a2eb4!8m2!3d11.8718063!4d75.3675514!16s%2Fg%2F11nxnt3wrb?entry=ttu&g_ep=EgoyMDI2MTExMC4wIKXMDSoASAFQAw%3D%3D
 
 
-Bus Stations
+Bus Stations :
 
-Kadirur Local Bus Stops
-Local bus stops like Kadirur Bus Stop (Pranaya Stop) and nearby ABC Bus Stand handle frequent local services along the Thalassery–Coorg Highway (SH-30).
-Thalassery New Bus Stand & Anjarakandy-side Bus Stand
-Bus stop
-Kerala
-Directions
-
+1)Thalasserry bus stand 
 Located about 7–8 km away in Thalassery town, offering short- and long-distance private and KSRTC bus services to Kannur, Kozhikode, Iritty, and other regional hubs.
-Kuthuparamba Bus Stand
-Bus stop
-Kuthuparamba, Keralam
-Directions
+Kannur District, Keralam
+Direction - https://www.google.com/maps/dir/11.7286591,75.4551249/Thalassery+New+Bus+Stand,+PFXV%2BXM5,+Old+T+C+Rd,+Pallithazhe,+Pilakool,+Thalassery,+Keralam+670101/@11.7592474,75.430749,12z/data=!4m8!4m7!1m0!1m5!1m1!1s0x3ba427a0efde3595:0xc5b629716415e779!2m2!1d75.4942355!2d11.7498994?entry=ttu&g_ep=EgoyMDI2MTExMC4wIKXMDSoASAFQAw%3D%3D
 
-Located about 7 km to the east, providing frequent connections toward Iritty, Mattannur, and Kannur.
-Kannur Central Bus Terminal (Thavakkara)
-Bus stop
-Kannur, Keralam
-Directions
+2)Kuthuparamba Bus Stand
+Located about 7–8 km away in Kuthuparamba town, 
+Kannur District, Keralam 
+Direction - https://www.google.com/maps/dir//KUTHUPARAMBA+BUS+STAND,+RHJ8%2B572,+Kuthuparamba,+Keralam+670643/@11.7916074,75.5184125,12z/data=!4m8!4m7!1m0!1m5!1m1!1s0x3ba42f06897dac13:0xbda1378c9ab81d4f!2m2!1d75.5656369!2d11.8303953?entry=ttu&g_ep=EgoyMDI2MTExMC4wIKXMDSoASAFQAw%3D%3D
 
-Located in Kannur town (~24–27 km away), serving as Kerala's largest multi-modal bus terminal.
+3)Kannur Central Bus Terminal (Thavakkara)
+ted in Kannur town (~24–27 km away), serving as Kerala's largest multi-modal bus terminal.
+Kannur District, Keralam
+Direction - https://www.google.com/maps/place/KANNUR+NEW+BUS+TERMINAL/@11.8670149,74.5092282,9z/data=!4m22!1m15!4m14!1m6!1m2!1s0x3ba422b9b2aca753:0x380605a11ce24f6c!2sKannur,+Keralam!2m2!1d75.367882!2d11.8704703!1m6!1m2!1s0x3ba422cc8d8e1521:0x6c3dfbb9d53d1cd3!2sKANNUR+NEW+BUS+TERMINAL,+V98C%2BQHW,+Thavakkara,+Kannur,+Keralam+670002!2m2!1d75.3714593!2d11.866988!3m5!1s0x3ba422cc8d8e1521:0x6c3dfbb9d53d1cd3!8m2!3d11.866988!4d75.3714593!16s%2Fg%2F11hbfj1s42?entry=ttu&g_ep=EgoyMDI2MTExMC4wIKXMDSoASAFQAw%3D%3D
 
-Airport
+
+Airport :
 
 • Kannur International Airport (CNN): Located in Mattannur, about 20–22 km northeast of Kadirur (a roughly 32-minute drive via the Thalassery–Irikkur / Mattannur route).
 • Alternative Airports: Calicut International Airport (CCJ) in Kozhikode and Mangalore International Airport (IXE) in Karnataka are further away (over 125–140 km).
