@@ -36,51 +36,53 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
         return file.read()
 
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
-    """Finds ONLY the relevant section(s) from sample.txt without modifying sample.txt."""
-    raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
-    blocks = []
-    for sec in raw_sections:
-        sec = sec.strip()
-        if not sec:
-            continue
-        if not sec.startswith('#') and '\n\n' in sec:
-            blocks.extend(b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip())
-        else:
-            blocks.append(sec)
+    try:
+        raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
+        blocks = []
+        for sec in raw_sections:
+            sec = sec.strip()
+            if not sec:
+                continue
+            if not sec.startswith('#') and '\n\n' in sec:
+                blocks.extend(b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip())
+            else:
+                blocks.append(sec)
 
-    q_words = set(re.findall(r'\w+', question.lower()))
-    stop_words = {
-        'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
-        'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
-    }
-    keywords = q_words - stop_words or q_words
+        q_words = set(re.findall(r'\w+', question.lower()))
+        stop_words = {
+            'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
+            'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
+        }
+        keywords = q_words - stop_words or q_words
 
-    expanded_keywords = set(keywords)
-    for w in keywords:
-        if w.endswith('s') and len(w) > 3:
-            expanded_keywords.add(w[:-1])
-        else:
-            expanded_keywords.add(w + 's')
-        if any(k in w for k in ('restaurant', 'restaurent', 'hotel')):
-            expanded_keywords.update({'restaurant', 'restaurants', 'restaurent', 'restaurents', 'hotel', 'hotels'})
+        expanded_keywords = set(keywords)
+        for w in keywords:
+            if w.endswith('s') and len(w) > 3:
+                expanded_keywords.add(w[:-1])
+            else:
+                expanded_keywords.add(w + 's')
+            if any(k in w for k in ('restaurant', 'restaurent', 'hotel')):
+                expanded_keywords.update({'restaurant', 'restaurants', 'restaurent', 'restaurents', 'hotel', 'hotels'})
 
-    scored_blocks = []
-    for block in blocks:
-        lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
-        if not lines:
-            continue
-        # Fixed: index lines[0] for the heading line
-        heading_words = set(re.findall(r'\w+', lines[0].lower()))
-        body_words = set(re.findall(r'\w+', block.lower()))
-        score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
-        if score > 0:
-            scored_blocks.append((score, block))
+        scored_blocks = []
+        for block in blocks:
+            lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+            if not lines:
+                continue
+            first_line = lines[0]
+            heading_words = set(re.findall(r'\w+', first_line.lower()))
+            body_words = set(re.findall(r'\w+', block.lower()))
+            score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
+            if score > 0:
+                scored_blocks.append((score, block))
 
-    # Fixed: index x[0] for the numeric score
-    scored_blocks.sort(key=lambda x: x[0], reverse=True)
-    top_blocks = [b for _, b in scored_blocks[:max_blocks]]
+        scored_blocks.sort(key=lambda item: item[0], reverse=True)
+        top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
-    return "\n\n".join(top_blocks) if top_blocks else context[:8000]
+        return "\n\n".join(top_blocks) if top_blocks else context[:8000]
+    except Exception as e:
+        print("Block match fallback:", repr(e))
+        return context[:8000]
 
 def get_matching_urls(context: str, question: str) -> list[str]:
     blocks = re.split(r'\n\s*\n', context.strip())
@@ -202,7 +204,6 @@ async def query_endpoint(request: QueryRequest):
         except Exception as llm_err:
             print("Primary LLM call error:", repr(llm_err))
 
-        # Fallback if primary call returns empty on a long section
         if not answer_text and focused_context:
             eng_formatted = format_as_vertical_list(focused_context)
             mal_raw = translate_to_malayalam_fallback(eng_formatted)
@@ -232,5 +233,3 @@ async def query_endpoint(request: QueryRequest):
 
         return {"answer": answer_text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
