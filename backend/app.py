@@ -51,19 +51,6 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GOOGLE_API_KEY
 )
 
-# Dynamic Malayalam -> English search keyword translator
-mal_to_en_query_prompt = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        "Translate the user's Malayalam question into English search keywords so we can search an English village directory. "
-        "Output ONLY simple English keywords (for example: 'history kadirur', 'hotels restaurants', 'ward 1 representative'). "
-        "Do not write full sentences or explanations."
-    ),
-    ("human", "{question}")
-])
-mal_to_en_query_chain = mal_to_en_query_prompt | llm
-
-# Instant offline backup map for common Malayalam terms
 MALAYALAM_KEYWORD_MAP = {
     'ചരിത്രം': 'history',
     'ഹോട്ടൽ': 'hotel hotels restaurant restaurants',
@@ -96,32 +83,27 @@ MALAYALAM_KEYWORD_MAP = {
 }
 
 def translate_dynamic_malayalam_query(question: str) -> str:
-    """Dynamically translates ANY Malayalam prompt into English keywords for searching sample.txt."""
     if not re.search(r'[\u0D00-\u0D7F]', question):
         return question
 
     extra_terms = []
-
-    # 1. Offline instant keyword match
     for ml_word, en_words in MALAYALAM_KEYWORD_MAP.items():
         if ml_word in question:
             extra_terms.append(en_words)
 
-    # 2. Dynamic Gemini translation for any Malayalam topic or proper name
     try:
-        resp = mal_to_en_query_chain.invoke({"question": question})
+        resp = llm.invoke(f"Translate this Malayalam query into simple English search keywords only: {question}")
         dynamic_en = extract_text(resp)
         if dynamic_en:
             extra_terms.append(dynamic_en)
     except Exception as e:
-        print("Dynamic Malayalam keyword translation warning:", repr(e))
+        print("Dynamic Malayalam translation warning:", repr(e))
 
     return f"{question} {' '.join(extra_terms)}".strip()
 
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
     search_text = translate_dynamic_malayalam_query(question)
 
-    # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -236,30 +218,35 @@ prompt_template = ChatPromptTemplate.from_messages([
 chain = prompt_template | llm
 
 mal_prompt = ChatPromptTemplate.from_messages([
-("system", "Translate the given English text into pure, natural native Malayalam script. Keep exact line breaks, bullet points ('• '), and URLs unchanged. Do not use markdown asterisks (**). Output ONLY the Malayalam translation."),
-("human", "{text}")
+    ("system", "Translate the given English text into pure, natural native Malayalam script. Keep exact line breaks, bullet points ('• '), and URLs unchanged. Do not use markdown asterisks (**). Output ONLY the Malayalam translation."),
+    ("human", "{text}")
 ])
+
 mal_chain = mal_prompt | llm
+
 class QueryRequest(BaseModel):
-question: str
+    question: str
+
 @app.post("/api/query")
 async def query_endpoint(request: QueryRequest):
-try:
-full_context = read_sample_file()
-focused_context = get_matching_blocks(full_context, request.question)
-response = chain.invoke({
-"context": focused_context,
-"question": request.question
-})
-answer_text = extract_text(response)
-# Fallback if Gemini returns empty on a long section (such as History of Kadirur)
-if not answer_text and focused_context:
-eng_formatted = format_as_vertical_list(focused_context)
-mal_resp = mal_chain.invoke({"text": eng_formatted})
-mal_raw = extract_text(mal_resp)
-if mal_raw:
-answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
-else:
+    try:
+        full_context = read_sample_file()
+        focused_context = get_matching_blocks(full_context, request.question)
+
+        response = chain.invoke({
+            "context": focused_context,
+            "question": request.question
+        })
+
+        answer_text = extract_text(response)
+
+        if not answer_text and focused_context:
+            eng_formatted = format_as_vertical_list(focused_context)
+            mal_resp = mal_chain.invoke({"text": eng_formatted})
+            mal_raw = extract_text(mal_resp)
+            if mal_raw:
+                answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
+            else:
 answer_text = eng_formatted
 elif answer_text:
 if "---" in answer_text:
