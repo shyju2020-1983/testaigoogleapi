@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import difflib
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -37,7 +36,7 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-def get_matching_blocks(context: str, question: str) -> str:
+def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
     # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
@@ -53,25 +52,17 @@ def get_matching_blocks(context: str, question: str) -> str:
     q_words = set(re.findall(r'\w+', question.lower()))
     stop_words = {
         'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
-        'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any', 'find'
+        'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
     }
     keywords = q_words - stop_words or q_words
 
-    # Fuzzy match user typos against every word in sample.txt (e.g., "htels" -> "hotels", "tailrs" -> "tailors")
-    all_context_words = list(set(re.findall(r'\w+', context.lower())))
-
     expanded_keywords = set(keywords)
     for w in keywords:
-        if len(w) >= 3:
-            close_matches = difflib.get_close_matches(w, all_context_words, n=5, cutoff=0.72)
-            expanded_keywords.update(close_matches)
         if w.endswith('s') and len(w) > 3:
             expanded_keywords.add(w[:-1])
         else:
             expanded_keywords.add(w + 's')
-
-    for w in list(expanded_keywords):
-        if any(k in w for k in ('restaurant', 'restaurent', 'hotel', 'htel')):
+        if any(k in w for k in ('restaurant', 'restaurent', 'hotel')):
             expanded_keywords.update({'restaurant', 'restaurants', 'restaurent', 'restaurents', 'hotel', 'hotels'})
 
     scored_blocks = []
@@ -80,20 +71,16 @@ def get_matching_blocks(context: str, question: str) -> str:
         if not lines:
             continue
         first_line = lines[0]
-        block_lower = block.lower()
         heading_words = set(re.findall(r'\w+', first_line.lower()))
-        body_words = set(re.findall(r'\w+', block_lower))
-        partial_hits = sum(1 for kw in expanded_keywords if len(kw) >= 3 and kw in block_lower)
-
-        score = (len(expanded_keywords & heading_words) * 10) + (len(expanded_keywords & body_words) * 3) + partial_hits
+        body_words = set(re.findall(r'\w+', block.lower()))
+        score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
         if score > 0:
             scored_blocks.append((score, block))
 
     scored_blocks.sort(key=lambda item: item[0], reverse=True)
-    # Return ALL matching sections across sample.txt
-    all_matched_blocks = [b for _, b in scored_blocks]
+    top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
-    return "\n\n".join(all_matched_blocks) if all_matched_blocks else context[:8000]
+    return "\n\n".join(top_blocks) if top_blocks else context[:8000]
 
 def get_matching_urls(context: str, question: str) -> list[str]:
     blocks = re.split(r'\n\s*\n', context.strip())
@@ -155,7 +142,7 @@ llm = ChatGoogleGenerativeAI(
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. Understand minor user spelling typos (e.g., 'htels' means 'hotels', 'restaurents' means 'restaurants'). Answer ONLY the specific topic asked by the user using ALL matching entries and sections from the provided Context. Do NOT skip any matching entry, do NOT include unrelated sections, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
+    "1. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
@@ -226,3 +213,14 @@ async def query_endpoint(request: QueryRequest):
             url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
             if "---" in answer_text:
                 eng, mal = answer_text.split("---", 1)
+                answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
+            else:
+                answer_text += url_block
+
+        return {"answer": answer_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
