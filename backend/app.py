@@ -36,7 +36,41 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
+def extract_text(response) -> str:
+    if isinstance(response.content, list):
+        return "".join(
+            b.get("text", "") if isinstance(b, dict) else str(getattr(b, "text", b))
+            for b in response.content
+        ).strip()
+    return str(response.content or "").strip()
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash-lite",
+    temperature=0.2,
+    google_api_key=GOOGLE_API_KEY
+)
+
+# NEW: Translates Malayalam prompts into English search keywords so sample.txt matches accurately
+query_en_prompt = ChatPromptTemplate.from_messages([
+    ("system", "Translate the user's Malayalam question into simple English search keywords. Output ONLY the English words, nothing else."),
+    ("human", "{question}")
+])
+query_en_chain = query_en_prompt | llm
+
+def normalize_question_for_search(question: str) -> str:
+    if re.search(r'[\u0D00-\u0D7F]', question):
+        try:
+            resp = query_en_chain.invoke({"question": question})
+            en_text = extract_text(resp)
+            if en_text:
+                return f"{question} {en_text}"
+        except Exception as e:
+            print("Malayalam query translation error:", repr(e))
+    return question
+
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
+    search_query = normalize_question_for_search(question)
+
     # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
@@ -49,7 +83,7 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         else:
             blocks.append(sec)
 
-    q_words = set(re.findall(r'\w+', question.lower()))
+    q_words = set(re.findall(r'\w+', search_query.lower()))
     stop_words = {
         'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
         'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
@@ -70,35 +104,28 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
-        first_line = lines[0]
+        first_line = next(iter(lines))
         heading_words = set(re.findall(r'\w+', first_line.lower()))
         body_words = set(re.findall(r'\w+', block.lower()))
         score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=lambda item: item[0], reverse=True)
+    scored_blocks.sort(key=lambda item: item, reverse=True)
     top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
     return "\n\n".join(top_blocks) if top_blocks else context[:8000]
 
 def get_matching_urls(context: str, question: str) -> list[str]:
+    search_query = normalize_question_for_search(question)
     blocks = re.split(r'\n\s*\n', context.strip())
-    q_words = set(re.findall(r'\w+', question.lower()))
+    q_words = set(re.findall(r'\w+', search_query.lower()))
     matched_urls = []
     for block in blocks:
         if q_words & set(re.findall(r'\w+', block.lower())):
             urls = re.findall(r'https?://[^\s<>"\']+', block)
             matched_urls.extend(u.rstrip('.,;:!?)') for u in urls)
     return list(dict.fromkeys(matched_urls))
-
-def extract_text(response) -> str:
-    if isinstance(response.content, list):
-        return "".join(
-            b.get("text", "") if isinstance(b, dict) else str(getattr(b, "text", b))
-            for b in response.content
-        ).strip()
-    return str(response.content or "").strip()
 
 def format_as_vertical_list(text: str) -> str:
     cleaned_lines = []
@@ -133,16 +160,10 @@ def format_as_vertical_list(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash-lite",
-    temperature=0.2,
-    google_api_key=GOOGLE_API_KEY
-)
-
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
+    "1. The user may ask questions in English OR Malayalam (e.g., 'കതിരൂരിന്റെ ചരിത്രം' means 'History of Kadirur'). Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
@@ -207,20 +228,17 @@ async def query_endpoint(request: QueryRequest):
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
 
         matched_urls = get_matching_urls(focused_context, request.question)
-        missing_urls = [u for u in matched_urls if u not in answer_text]
-
-        if missing_urls:
-            url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
-            if "---" in answer_text:
-                eng, mal = answer_text.split("---", 1)
-                answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
-            else:
-                answer_text += url_block
-
-        return {"answer": answer_text}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+missing_urls = [u for u in matched_urls if u not in answer_text]
+if missing_urls:
+url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
+if "---" in answer_text:
+eng, mal = answer_text.split("---", 1)
+answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
+else:
+answer_text += url_block
+return {"answer": answer_text}
+except Exception as e:
+raise HTTPException(status_code=500, detail=str(e))
+if name == "main":
+import uvicorn
+uvicorn.run(app, host="0.0.0.0", port=8000)
