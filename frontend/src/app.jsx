@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 function App() {
+
+
   const [query, setQuery] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
 
-  // ANIMATED LIGHT BLUE PLACEHOLDER ROTATION STATES
+  // ANIMATED LIGHT BLUE PLACEHOLDER & ADVERTISEMENT ROTATION STATES (EVERY 2 SECONDS)
   const [placeholderText, setPlaceholderText] = useState('Ask question about kadirur');
   const [followUpPlaceholder, setFollowUpPlaceholder] = useState('Ask follow-up question');
+  const [adText, setAdText] = useState('For advertisement contact 8078521983');
 
   useEffect(() => {
     let isEnglish = true;
@@ -19,9 +22,11 @@ function App() {
       if (isEnglish) {
         setPlaceholderText('Ask question about Kadirur');
         setFollowUpPlaceholder('Ask follow-up question');
+        setAdText('For advertisement contact   8078521983');
       } else {
         setPlaceholderText('കതിരൂരിനെക്കുറിച്ച് ചോദ്യം ചോദിക്കാം');
         setFollowUpPlaceholder('വീണ്ടും തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
+        setAdText('പരസ്യങ്ങൾക്കായി ബന്ധപ്പെടുക   8078521983');
       }
     }, 2000);
 
@@ -67,8 +72,8 @@ function App() {
     const ec2PublicIp = "13.233.119.28";
     const targetUrl = `http://${ec2PublicIp}:8000/api/query`;
 
-    // Below code for local running 
-// const targetUrl = 'http://localhost:8000/api/query';
+    // Below code for local running
+    // const targetUrl = 'http://localhost:8000/api/query';
     try {
       const res = await fetch(targetUrl, {
         method: 'POST',
@@ -103,7 +108,9 @@ function App() {
       setLoading(false);
     }
   };
+//background
 
+//
   const handleClearChat = () => {
     setChatHistory([]);
     setErrorDetails(null);
@@ -112,17 +119,51 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0', boxSizing: 'border-box' }}>
-      <style>{`
-        .custom-chat-input::placeholder {
-          color: #90caf9 !important;
-          opacity: 0.85;
-        }
-      `}</style>
+  <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
+    <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff' }}>
+      <b>Kadirur village AI Assistant</b>
+    </h2>
 
-      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
-        <h2 style={{ paddingBottom: '10px', textAlign: 'center', color: '#007bff' }}>
-          <b>Kadirur village chatbot</b>
-        </h2>
+    {/* TOP ROTATING ADVERTISEMENT BANNER (SLIGHTLY LEFT, DIRECTLY BELOW TITLE) */}
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        paddingRight: '10px',
+        marginBottom: '18px',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: 'rgba(0, 123, 255, 0.12)',
+          border: '1px solid rgba(0, 123, 255, 0.4)',
+          borderRadius: '8px',
+          padding: '6px 12px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
+        <span
+          style={{
+            backgroundColor: '#007bff',
+            color: '#ffffff',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            letterSpacing: '0.5px',
+          }}
+        >
+          AD
+        </span>
+        <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#90caf9' }}>
+          {adText}
+        </span>
+      </div>
+    </div>
+
+        
 
         {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
@@ -209,15 +250,24 @@ function App() {
               transition: 'all 0.2s ease-in-out'
             }}
           />
-          <button
+           <button
             type="submit"
             disabled={loading}
-            style={{ padding: '12px', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: loading ? '#4a5568' : '#007bff', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '15px', transition: 'background-color 0.2s' }}
+            style={{
+              padding: '12px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              backgroundColor: loading ? '#4a5568' : '#007bff',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              fontSize: '15px',
+              transition: 'background-color 0.2s'
+            }}
           >
             {loading ? 'Searching...' : 'Ask'}
           </button>
-
-          {(chatHistory.length > 0 || errorDetails) && (
+{(chatHistory.length > 0 || errorDetails) && (
             <button
               type="button"
               onClick={handleClearChat}
