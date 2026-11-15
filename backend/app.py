@@ -35,54 +35,27 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
-    try:
-        raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
-        blocks = []
-        for sec in raw_sections:
-            sec = sec.strip()
-            if not sec:
-                continue
-            if not sec.startswith('#') and '\n\n' in sec:
-                blocks.extend(b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip())
-            else:
-                blocks.append(sec)
+def get_matching_blocks(context: str, question: str, max_blocks: int = 5) -> str:
+    blocks = [b.strip() for b in re.split(r'\n\s*\n', context.strip()) if b.strip()]
+    q_words = set(re.findall(r'\w+', question.lower()))
+    stop_words = {
+        'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
+        'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details'
+    }
+    keywords = q_words - stop_words or q_words
 
-        q_words = set(re.findall(r'\w+', question.lower()))
-        stop_words = {
-            'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
-            'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
-        }
-        keywords = q_words - stop_words or q_words
+    scored_blocks = []
+    for block in blocks:
+        b_words = set(re.findall(r'\w+', block.lower()))
+        score = len(keywords & b_words)
+        if score > 0:
+            scored_blocks.append((score, block))
 
-        expanded_keywords = set(keywords)
-        for w in keywords:
-            if w.endswith('s') and len(w) > 3:
-                expanded_keywords.add(w[:-1])
-            else:
-                expanded_keywords.add(w + 's')
-            if any(k in w for k in ('restaurant', 'restaurent', 'hotel')):
-                expanded_keywords.update({'restaurant', 'restaurants', 'restaurent', 'restaurents', 'hotel', 'hotels'})
+    # Fixed: Sort strictly by numeric score (x[0])
+    scored_blocks.sort(key=lambda x: x[0], reverse=True)
+    top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
-        scored_blocks = []
-        for block in blocks:
-            lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
-            if not lines:
-                continue
-            first_line = lines[0]
-            heading_words = set(re.findall(r'\w+', first_line.lower()))
-            body_words = set(re.findall(r'\w+', block.lower()))
-            score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
-            if score > 0:
-                scored_blocks.append((score, block))
-
-        scored_blocks.sort(key=lambda item: item[0], reverse=True)
-        top_blocks = [b for _, b in scored_blocks[:max_blocks]]
-
-        return "\n\n".join(top_blocks) if top_blocks else context[:8000]
-    except Exception as e:
-        print("Block match fallback:", repr(e))
-        return context[:8000]
+    return "\n\n".join(top_blocks) if top_blocks else ""
 
 def get_matching_urls(context: str, question: str) -> list[str]:
     blocks = re.split(r'\n\s*\n', context.strip())
@@ -117,8 +90,8 @@ def format_as_vertical_list(text: str) -> str:
         is_indented = raw_line.startswith(('  ', '\t'))
         stripped = raw_line.strip()
 
-        if stripped.startswith('#'):
-            cleaned_lines.append(stripped.lstrip('#').strip().rstrip(':') + ":")
+        if stripped.startswith('##'):
+            cleaned_lines.append(stripped.lstrip('#').strip() + ":")
             continue
 
         had_bullet = bool(re.match(r'^[-*•]\s+', stripped))
@@ -140,22 +113,23 @@ def format_as_vertical_list(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
+# MATCHES YOUR WORKING SETUP
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
-    temperature=0.1,
+    temperature=0.2,
     google_api_key=GOOGLE_API_KEY
 )
 
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
+    "1. Prioritize provided Context. Copy EVERY SINGLE LINE and EVERY CONTINUATION LINE of the matching entry from Context completely without cutting off or summarizing. If unrelated, use general knowledge.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
     "5. LIST & CONTINUATION FORMAT RULE (STRICT):\n"
     "   - Preserve the exact line-by-line bullet structure: put '• ' ONLY on lines that start with '• ' in the Context.\n"
-    "   - Copy all continuation lines below a bulleted line (such as ratings, prices, or road addresses) on separate lines WITHOUT adding a bullet.\n"
+    "   - Copy all continuation lines below a bulleted line on separate lines WITHOUT adding a bullet.\n"
     "   - Keep internal commas and dashes intact.\n"
     "   - Do NOT put a bullet point on section headers ending with ':'.\n"
     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
@@ -178,6 +152,7 @@ mal_prompt = ChatPromptTemplate.from_messages([
 mal_chain = mal_prompt | llm
 
 def translate_to_malayalam_fallback(english_text: str) -> str:
+    """Translates English text into Malayalam line-by-line if the main bilingual call returns empty."""
     try:
         resp = mal_chain.invoke({"text": english_text})
         return extract_text_from_response(resp)
@@ -193,17 +168,19 @@ async def query_endpoint(request: QueryRequest):
     try:
         full_context = read_sample_file()
         focused_context = get_matching_blocks(full_context, request.question)
+        context_for_llm = focused_context if focused_context else full_context[:6000]
 
         answer_text = ""
         try:
             response = chain.invoke({
-                "context": focused_context,
+                "context": context_for_llm,
                 "question": request.question
             })
             answer_text = extract_text_from_response(response)
         except Exception as llm_err:
             print("Primary LLM call error:", repr(llm_err))
 
+        # Fallback for long sections (like History of Kadirur) if primary call fails or returns empty
         if not answer_text and focused_context:
             eng_formatted = format_as_vertical_list(focused_context)
             mal_raw = translate_to_malayalam_fallback(eng_formatted)
@@ -220,7 +197,7 @@ async def query_endpoint(request: QueryRequest):
                 mal_raw = translate_to_malayalam_fallback(eng_formatted)
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
 
-        matched_urls = get_matching_urls(focused_context, request.question)
+        matched_urls = get_matching_urls(context_for_llm, request.question)
         missing_urls = [u for u in matched_urls if u not in answer_text]
 
         if missing_urls:
@@ -233,3 +210,8 @@ async def query_endpoint(request: QueryRequest):
 
         return {"answer": answer_text}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
