@@ -37,14 +37,12 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
 
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
     """Finds ONLY the relevant section(s) from sample.txt without modifying sample.txt."""
-    # Split by '#' / '##' headings first so heading + all its bullet items stay together
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
         sec = sec.strip()
         if not sec:
             continue
-        # If a section has no '#' heading and contains multiple blank-line blocks, split it
         if not sec.startswith('#') and '\n\n' in sec:
             blocks.extend(b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip())
         else:
@@ -71,12 +69,14 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
+        # Fixed: index lines[0] for the heading line
         heading_words = set(re.findall(r'\w+', lines[0].lower()))
         body_words = set(re.findall(r'\w+', block.lower()))
         score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
         if score > 0:
             scored_blocks.append((score, block))
 
+    # Fixed: index x[0] for the numeric score
     scored_blocks.sort(key=lambda x: x[0], reverse=True)
     top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
@@ -231,3 +231,6 @@ async def query_endpoint(request: QueryRequest):
                 answer_text += url_block
 
         return {"answer": answer_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
