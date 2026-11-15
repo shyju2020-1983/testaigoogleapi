@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import difflib
+import operator
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -71,7 +72,6 @@ def normalize_question_for_search(question: str) -> str:
 def get_matching_blocks(context: str, question: str) -> str:
     search_query = normalize_question_for_search(question)
 
-    # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -121,12 +121,12 @@ def get_matching_blocks(context: str, question: str) -> str:
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=lambda item: item[0], reverse=True)
+    scored_blocks.sort(key=operator.itemgetter(0), reverse=True)
     all_matched_blocks = [b for _, b in scored_blocks]
 
     return "\n\n".join(all_matched_blocks) if all_matched_blocks else context[:8000]
 
-def get_matching_urls(context: str, question: str) -> list[str]:
+def get_matching_urls(context: str, question: str) -> list:
     search_query = normalize_question_for_search(question)
     blocks = re.split(r'\n\s*\n', context.strip())
     q_words = set(re.findall(r'\w+', search_query.lower()))
@@ -218,7 +218,6 @@ async def query_endpoint(request: QueryRequest):
 
         answer_text = extract_text(response)
 
-        # Fallback if Gemini returns empty on a long section (such as History of Kadirur)
         if not answer_text and focused_context:
             eng_formatted = format_as_vertical_list(focused_context)
             mal_resp = mal_chain.invoke({"text": eng_formatted})
@@ -230,9 +229,9 @@ async def query_endpoint(request: QueryRequest):
         elif answer_text:
             if "---" in answer_text:
                 eng, mal = answer_text.split("---", 1)
-answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
-else:
-eng_formatted = format_as_vertical_list(answer_text)
+                answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
+            else:
+                eng_formatted = format_as_vertical_list(answer_text)
 mal_resp = mal_chain.invoke({"text": eng_formatted})
 mal_raw = extract_text(mal_resp)
 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
