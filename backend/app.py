@@ -35,14 +35,7 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
             f.write("Kadirur Village Office handles decentralized land mutation mappings, village development project registers, and local community certificate provisions.")
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
- if not re.search(r'[\u0D00-\u0D7F]', question):
-        return question
-    try:
-        resp = llm.invoke(f"Translate this Malayalam text into English search keywords only: {question}")
-        en_words = extract_text(resp)
-        return f"{question} {en_words}".strip()
-    except Exception:
-        return question
+
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
     # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
