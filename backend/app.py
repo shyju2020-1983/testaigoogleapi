@@ -62,7 +62,6 @@ def get_matching_blocks(context: str, question: str) -> str:
 
     expanded_keywords = set(keywords)
     for w in keywords:
-        # Fuzzy match against words in sample.txt (catches typos like htels, restaurents, histroy, etc.)
         if len(w) >= 3:
             close_matches = difflib.get_close_matches(w, all_context_words, n=5, cutoff=0.72)
             expanded_keywords.update(close_matches)
@@ -72,7 +71,6 @@ def get_matching_blocks(context: str, question: str) -> str:
         else:
             expanded_keywords.add(w + 's')
 
-    # Expand synonyms across all corrected keywords too
     for w in list(expanded_keywords):
         if any(k in w for k in ('restaurant', 'restaurent', 'hotel', 'htel')):
             expanded_keywords.update({'restaurant', 'restaurants', 'restaurent', 'restaurents', 'hotel', 'hotels'})
@@ -82,7 +80,7 @@ def get_matching_blocks(context: str, question: str) -> str:
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
-        first_line = lines.lower()
+        first_line = lines[0].lower()
         block_lower = block.lower()
         heading_words = set(re.findall(r'\w+', first_line))
         body_words = set(re.findall(r'\w+', block_lower))
@@ -95,7 +93,7 @@ def get_matching_blocks(context: str, question: str) -> str:
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=lambda item: item, reverse=True)
+    scored_blocks.sort(key=lambda item: item[0], reverse=True)
     all_matched_blocks = [b for _, b in scored_blocks]
 
     return "\n\n".join(all_matched_blocks) if all_matched_blocks else context[:8000]
@@ -229,3 +227,6 @@ async def query_endpoint(request: QueryRequest):
         if missing_urls:
             url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
             if "---" in answer_text:
+                eng, mal = answer_text.split("---", 1)
+                answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
+            else:
