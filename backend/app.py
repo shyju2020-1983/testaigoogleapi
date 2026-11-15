@@ -24,10 +24,7 @@ load_dotenv()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 # Below 2 line code is for local envirnment execution 
-
 if not GOOGLE_API_KEY:
-
-
     raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY environment variable is missing on this EC2 instance!")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -51,6 +48,27 @@ def get_matching_urls(context: str, question: str) -> list[str]:
             matched_urls.extend(u.rstrip('.,;:!?)') for u in urls)
     return list(dict.fromkeys(matched_urls))
 
+# NEW HELPER: Forces output into clean vertical bullet points and splits accidental commas
+def format_as_vertical_list(text: str) -> str:
+    cleaned_lines = []
+    for raw_line in text.strip().splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        # Remove existing bullet symbols (-, *, •, 1.) to normalize
+        line = re.sub(r'^[-*•\d.)]+\s*', '', line)
+
+        # If line contains commas and is NOT a URL, split each item onto its own bullet line
+        if ',' in line and not line.startswith(('http://', 'https://')):
+            parts = [p.strip() for p in line.split(',') if p.strip()]
+            for part in parts:
+                cleaned_lines.append(f"• {part}")
+        else:
+            cleaned_lines.append(f"• {line}")
+
+    return "\n".join(cleaned_lines)
+
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
@@ -67,15 +85,20 @@ system_prompt = (
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
-    "5. Format exactly as: [English text] followed by a new line with '---' followed by [Malayalam translation].\n"
-    "6. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
-    "7. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character into both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
+    "5. LIST FORMAT RULE (STRICT): Always format EVERY response as a vertical bulleted list using '• ' at the start of every line. NEVER write comma-separated lists or long paragraphs. Put every single item, place, office, service, or detail on its own separate line.\n"
+    "6. Format exactly as: [English bulleted list] followed by a new line with '---' followed by [Malayalam bulleted list].\n"
+    "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
+    "8. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character on its own bullet line in both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
     "EXAMPLE FORMAT:\n"
-    "User: Who is the Prime Minister of India?\n"
+    "User: What services are handled by Kadirur Village Office?\n"
     "Response:\n"
-    "The Prime Minister of India is Narendra Modi.\n"
+    "• Decentralized land mutation mappings\n"
+    "• Village development project registers\n"
+    "• Local community certificate provisions\n"
     "---\n"
-    "ഇന്ത്യയുടെ പ്രധാനമന്ത്രി നരേന്ദ്ര മോദിയാണ്.\n\n"
+    "• വികേന്ദ്രീകൃത ഭൂമി പോക്കുവരവ് മാപ്പിംഗ്\n"
+    "• വില്ലേജ് വികസന പദ്ധതി രജിസ്റ്ററുകൾ\n"
+    "• പ്രാദേശിക കമ്മ്യൂണിറ്റി സർട്ടിഫിക്കറ്റ് സേവനങ്ങൾ\n\n"
     "Context:\n{context}"
 )
 
@@ -105,12 +128,19 @@ async def query_endpoint(request: QueryRequest):
             else str(response.content)
         )
 
+        # Enforce vertical bullet list formatting on both English and Malayalam sections
+        if "---" in answer_text:
+            eng, mal = answer_text.split("---", 1)
+            answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
+        else:
+            answer_text = format_as_vertical_list(answer_text)
+
         # Dynamically attach any URL from the matching section in sample.txt if Gemini left it out
         matched_urls = get_matching_urls(context_data, request.question)
         missing_urls = [u for u in matched_urls if u not in answer_text]
 
         if missing_urls:
-            url_block = "\nDirections / Link: " + "\n".join(missing_urls)
+            url_block = "\n" + "\n".join(f"• {u}" for u in missing_urls)
             if "---" in answer_text:
                 eng, mal = answer_text.split("---", 1)
                 answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
