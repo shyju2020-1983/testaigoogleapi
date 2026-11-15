@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import operator
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -50,26 +51,75 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GOOGLE_API_KEY
 )
 
-# NEW: Translates Malayalam prompts into English search keywords so sample.txt matches accurately
-query_en_prompt = ChatPromptTemplate.from_messages([
-    ("system", "Translate the user's Malayalam question into simple English search keywords. Output ONLY the English words, nothing else."),
+# Dynamic Malayalam -> English search keyword translator
+mal_to_en_query_prompt = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        "Translate the user's Malayalam question into English search keywords so we can search an English village directory. "
+        "Output ONLY simple English keywords (for example: 'history kadirur', 'hotels restaurants', 'ward 1 representative'). "
+        "Do not write full sentences or explanations."
+    ),
     ("human", "{question}")
 ])
-query_en_chain = query_en_prompt | llm
+mal_to_en_query_chain = mal_to_en_query_prompt | llm
 
-def normalize_question_for_search(question: str) -> str:
-    if re.search(r'[\u0D00-\u0D7F]', question):
-        try:
-            resp = query_en_chain.invoke({"question": question})
-            en_text = extract_text(resp)
-            if en_text:
-                return f"{question} {en_text}"
-        except Exception as e:
-            print("Malayalam query translation error:", repr(e))
-    return question
+# Instant offline backup map for common Malayalam terms
+MALAYALAM_KEYWORD_MAP = {
+    'ചരിത്രം': 'history',
+    'ഹോട്ടൽ': 'hotel hotels restaurant restaurants',
+    'ഹോട്ടലുകൾ': 'hotel hotels restaurant restaurants',
+    'റെസ്റ്റോറന്റ്': 'restaurant restaurants hotel hotels',
+    'റെസ്റ്റോറന്റുകൾ': 'restaurant restaurants hotel hotels',
+    'ഭക്ഷണം': 'restaurant hotel food',
+    'തയ്യൽ': 'tailor tailors',
+    'തയ്യൽക്കട': 'tailor tailors',
+    'തയ്യൽക്കടകൾ': 'tailor tailors',
+    'വാർഡ്': 'ward',
+    'വാർഡുകൾ': 'ward',
+    'ജനപ്രതിനിധി': 'representative elected ward',
+    'ജനപ്രതിനിധികൾ': 'representative elected ward',
+    'മെമ്പർ': 'ward representative',
+    'മെമ്പർമാർ': 'ward representative',
+    'ക്ഷേത്രം': 'temple suryanarayana',
+    'അമ്പലം': 'temple suryanarayana',
+    'സ്കൂൾ': 'school',
+    'സ്കൂളുകൾ': 'school',
+    'വിദ്യാലയം': 'school',
+    'ഓഫീസ്': 'office village',
+    'വില്ലേജ്': 'village office',
+    'ആശുപത്രി': 'hospital health clinic',
+    'ബാങ്ക്': 'bank',
+    'കടകൾ': 'shop shops',
+    'ഷോപ്പ്': 'shop shops',
+    'റോഡ്': 'road',
+    'സൂര്യൻ': 'sun surya',
+}
+
+def translate_dynamic_malayalam_query(question: str) -> str:
+    """Dynamically translates ANY Malayalam prompt into English keywords for searching sample.txt."""
+    if not re.search(r'[\u0D00-\u0D7F]', question):
+        return question
+
+    extra_terms = []
+
+    # 1. Offline instant keyword match
+    for ml_word, en_words in MALAYALAM_KEYWORD_MAP.items():
+        if ml_word in question:
+            extra_terms.append(en_words)
+
+    # 2. Dynamic Gemini translation for any Malayalam topic or proper name
+    try:
+        resp = mal_to_en_query_chain.invoke({"question": question})
+        dynamic_en = extract_text(resp)
+        if dynamic_en:
+            extra_terms.append(dynamic_en)
+    except Exception as e:
+        print("Dynamic Malayalam keyword translation warning:", repr(e))
+
+    return f"{question} {' '.join(extra_terms)}".strip()
 
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
-    search_query = normalize_question_for_search(question)
+    search_text = translate_dynamic_malayalam_query(question)
 
     # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
@@ -83,7 +133,7 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         else:
             blocks.append(sec)
 
-    q_words = set(re.findall(r'\w+', search_query.lower()))
+    q_words = set(re.findall(r'\w+', search_text.lower()))
     stop_words = {
         'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
         'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
@@ -111,15 +161,15 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=lambda item: item, reverse=True)
+    scored_blocks.sort(key=operator.itemgetter(0), reverse=True)
     top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
     return "\n\n".join(top_blocks) if top_blocks else context[:8000]
 
-def get_matching_urls(context: str, question: str) -> list[str]:
-    search_query = normalize_question_for_search(question)
+def get_matching_urls(context: str, question: str) -> list:
+    search_text = translate_dynamic_malayalam_query(question)
     blocks = re.split(r'\n\s*\n', context.strip())
-    q_words = set(re.findall(r'\w+', search_query.lower()))
+    q_words = set(re.findall(r'\w+', search_text.lower()))
     matched_urls = []
     for block in blocks:
         if q_words & set(re.findall(r'\w+', block.lower())):
@@ -163,7 +213,7 @@ def format_as_vertical_list(text: str) -> str:
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. The user may ask questions in English OR Malayalam (e.g., 'കതിരൂരിന്റെ ചരിത്രം' means 'History of Kadirur'). Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
+    "1. The user may ask questions in English OR any Malayalam phrasing. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
@@ -186,48 +236,41 @@ prompt_template = ChatPromptTemplate.from_messages([
 chain = prompt_template | llm
 
 mal_prompt = ChatPromptTemplate.from_messages([
-    ("system", "Translate the given English text into pure, natural native Malayalam script. Keep exact line breaks, bullet points ('• '), and URLs unchanged. Do not use markdown asterisks (**). Output ONLY the Malayalam translation."),
-    ("human", "{text}")
+("system", "Translate the given English text into pure, natural native Malayalam script. Keep exact line breaks, bullet points ('• '), and URLs unchanged. Do not use markdown asterisks (**). Output ONLY the Malayalam translation."),
+("human", "{text}")
 ])
-
 mal_chain = mal_prompt | llm
-
 class QueryRequest(BaseModel):
-    question: str
-
+question: str
 @app.post("/api/query")
 async def query_endpoint(request: QueryRequest):
-    try:
-        full_context = read_sample_file()
-        focused_context = get_matching_blocks(full_context, request.question)
-
-        response = chain.invoke({
-            "context": focused_context,
-            "question": request.question
-        })
-
-        answer_text = extract_text(response)
-
-        # Fallback if Gemini returns empty on a long section (such as History of Kadirur)
-        if not answer_text and focused_context:
-            eng_formatted = format_as_vertical_list(focused_context)
-            mal_resp = mal_chain.invoke({"text": eng_formatted})
-            mal_raw = extract_text(mal_resp)
-            if mal_raw:
-                answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
-            else:
-                answer_text = eng_formatted
-        elif answer_text:
-            if "---" in answer_text:
-                eng, mal = answer_text.split("---", 1)
-                answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
-            else:
-                eng_formatted = format_as_vertical_list(answer_text)
-                mal_resp = mal_chain.invoke({"text": eng_formatted})
-                mal_raw = extract_text(mal_resp)
-                answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
-
-        matched_urls = get_matching_urls(focused_context, request.question)
+try:
+full_context = read_sample_file()
+focused_context = get_matching_blocks(full_context, request.question)
+response = chain.invoke({
+"context": focused_context,
+"question": request.question
+})
+answer_text = extract_text(response)
+# Fallback if Gemini returns empty on a long section (such as History of Kadirur)
+if not answer_text and focused_context:
+eng_formatted = format_as_vertical_list(focused_context)
+mal_resp = mal_chain.invoke({"text": eng_formatted})
+mal_raw = extract_text(mal_resp)
+if mal_raw:
+answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
+else:
+answer_text = eng_formatted
+elif answer_text:
+if "---" in answer_text:
+eng, mal = answer_text.split("---", 1)
+answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
+else:
+eng_formatted = format_as_vertical_list(answer_text)
+mal_resp = mal_chain.invoke({"text": eng_formatted})
+mal_raw = extract_text(mal_resp)
+answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
+matched_urls = get_matching_urls(focused_context, request.question)
 missing_urls = [u for u in matched_urls if u not in answer_text]
 if missing_urls:
 url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
