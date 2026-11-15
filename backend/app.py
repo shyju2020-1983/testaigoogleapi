@@ -35,23 +35,39 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
+def split_into_sections(context: str) -> list[str]:
+    """Splits sample.txt into individual topic sections using '#', '##', or blank-line separated blocks."""
+    # First split whenever a line starts with '#' or '##'
+    raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
+    sections = []
+
+    for sec in raw_sections:
+        sec = sec.strip()
+        if not sec:
+            continue
+        # If a section has no '#' header and is very large, split it further by double newlines
+        if not sec.startswith('#') and '\n\n' in sec:
+            sub_blocks = [b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip()]
+            sections.extend(sub_blocks)
+        else:
+            sections.append(sec)
+
+    return sections
+
 def find_exact_section(context: str, question: str) -> str:
-    """Finds the best matching '##' section from sample.txt with 100% exact lines."""
-    if re.search(r'^##\s+', context, flags=re.MULTILINE):
-        blocks = [b.strip() for b in re.split(r'(?=^##\s+)', context.strip(), flags=re.MULTILINE) if b.strip()]
-    else:
-        blocks = [b.strip() for b in re.split(r'\n\s*\n', context.strip()) if b.strip()]
+    """Finds ONLY the single most relevant section from sample.txt matching the user's question."""
+    sections = split_into_sections(context)
 
     q_words = set(re.findall(r'\w+', question.lower()))
     stop_words = {
         'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
-        'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show'
+        'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
     }
     keywords = q_words - stop_words
     if not keywords:
         return ""
 
-    # Expand plurals and common spelling variants (e.g. Restaurents / Restaurants / Hotels)
+    # Expand plurals and common spelling variants (e.g., Restaurents / Restaurants / Hotels)
     expanded_keywords = set(keywords)
     for w in keywords:
         if w.endswith('s') and len(w) > 3:
@@ -63,13 +79,20 @@ def find_exact_section(context: str, question: str) -> str:
 
     best_score = 0
     best_block = ""
-    for block in blocks:
-        lines = block.splitlines()
-        heading_words = set(re.findall(r'\w+', lines[0].lower())) if lines else set()
+    for block in sections:
+        lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+        if not lines:
+            continue
+
+        # Safely index the first line (the section heading)
+        heading_words = set(re.findall(r'\w+', lines[0].lower()))
         body_words = set(re.findall(r'\w+', block.lower()))
 
-        # Weight heading matches higher so "## Restaurents and hotels in Kadirur" always wins
-        score = (len(expanded_keywords & heading_words) * 5) + len(expanded_keywords & body_words)
+        # Strongly prioritize heading matches so "## Restaurents and hotels in Kadirur" wins cleanly
+        heading_hits = len(expanded_keywords & heading_words)
+        body_hits = len(expanded_keywords & body_words)
+        score = (heading_hits * 10) + body_hits
+
         if score > best_score:
             best_score = score
             best_block = block
@@ -100,7 +123,7 @@ def format_as_vertical_list(text: str) -> str:
         stripped = raw_line.strip()
 
         # Convert "## Heading" into clean "Heading:" without bullet
-        if stripped.startswith('##'):
+        if stripped.startswith('#'):
             cleaned_lines.append(stripped.lstrip('#').strip().rstrip(':') + ":")
             continue
 
@@ -129,7 +152,6 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GOOGLE_API_KEY
 )
 
-# Dedicated Malayalam translator for exact sample.txt sections
 mal_prompt = ChatPromptTemplate.from_messages([
     (
         "system",
@@ -144,7 +166,6 @@ mal_prompt = ChatPromptTemplate.from_messages([
 ])
 mal_chain = mal_prompt | llm
 
-# General knowledge chain ONLY for questions not found in sample.txt (e.g., CM/PM)
 general_prompt = ChatPromptTemplate.from_messages([
     (
         "system",
@@ -166,7 +187,7 @@ async def query_endpoint(request: QueryRequest):
         full_context = read_sample_file()
         matched_section = find_exact_section(full_context, request.question)
 
-        # CASE 1: Matched a section in sample.txt -> Output exact file content + Malayalam translation
+        # CASE 1: Matched ONLY the relevant section in sample.txt
         if matched_section:
             eng_formatted = format_as_vertical_list(matched_section)
             mal_raw = ""
