@@ -56,32 +56,35 @@ def format_as_vertical_list(text: str) -> str:
         if not raw_line.strip():
             continue
 
-        # Check if Gemini indented this line as a sub-detail (starts with spaces/tabs)
         is_sub_detail = raw_line.startswith(('  ', '\t'))
         line = raw_line.strip()
 
-        # Keep URLs clean without a bullet point, indented under the heading
+        # 1. Category headers ending with ':' (e.g., "Tailors in Kadirur:") -> NO bullet point
+        if line.endswith(':') and not is_sub_detail:
+            line = re.sub(r'^[-*•\d.)]+\s*', '', line)
+            cleaned_lines.append(line)
+            continue
+
+        # 2. URLs -> NO bullet point, indented under the entry
         if line.startswith(('http://', 'https://')) or 'http://' in line or 'https://' in line:
             line = re.sub(r'^[-*•]+\s*', '', line)
             cleaned_lines.append(f"  {line}")
             continue
 
-        # If it is an indented sub-detail (like Address: ..., Phone: ...), keep it indented WITHOUT a bullet
+        # 3. Indented sub-details (e.g., "  Location: Kadirur") -> NO bullet point
         if is_sub_detail:
             line = re.sub(r'^[-*•]+\s*', '', line)
             cleaned_lines.append(f"  {line}")
             continue
 
-        # If it has a sub-field label (e.g., "Location: ...", "Phone: ...", "Address: ..."), keep it without a bullet
+        # 4. Field labels (e.g., "Location: ...", "Phone: ...") -> NO bullet point
         if re.match(r'^(Location|Address|Phone|Contact|Timing|Timings|Directions|Link|സ്ഥലം|വിലാസം|ഫോൺ|സമയം)\s*:', line, re.IGNORECASE):
             line = re.sub(r'^[-*•]+\s*', '', line)
             cleaned_lines.append(f"  {line}")
             continue
 
-        # Otherwise, treat it as a main heading/entry and apply a bullet point
+        # 5. Actual entry/shop/place names -> ADD bullet point ('• ')
         line = re.sub(r'^[-*•\d.)]+\s*', '', line)
-
-        # If multiple headings were accidentally joined by commas, split them into separate bulleted headings
         parts = [p.strip() for p in split_pattern.split(line) if p.strip()]
         for part in parts:
             part = re.sub(r'^and\s+', '', part, flags=re.IGNORECASE).rstrip('.').strip()
@@ -106,24 +109,26 @@ system_prompt = (
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
-    "5. LIST & HEADING FORMAT RULE (STRICT): Put a bullet point ('• ') ONLY on each main heading, title, shop name, or place name from the Context. Any sub-details belonging to that heading (such as location, address, phone number, timings, or URLs) MUST be placed on separate lines indented with 2 spaces ('  ') WITHOUT a bullet point. NEVER write comma-separated lists or paragraphs.\n"
+    "5. LIST & HEADING FORMAT RULE (STRICT): If you include a category title ending with a colon (e.g., 'Tailors in Kadirur:'), write it WITHOUT a bullet point. Put a bullet point ('• ') ONLY on each individual shop, place, person, or entry name from the Context. Any sub-details belonging to that entry (such as location, phone number, timings, or URLs) MUST be on separate lines indented with 2 spaces ('  ') WITHOUT a bullet point. NEVER write comma-separated lists or paragraphs.\n"
     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
-    "8. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character on its own indented line (without a bullet) under the matching heading in both the English and Malayalam responses.\n\n"
+    "8. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character on its own indented line (without a bullet) under the matching entry in both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
     "EXAMPLE FORMAT:\n"
-    "User: Tell me about shops in Kadirur\n"
+    "User: Tell me about tailors in Kadirur\n"
     "Response:\n"
+    "Tailors in Kadirur:\n"
     "• H2O Kadirur (Her Only)\n"
     "  Location: Kadirur\n"
     "  https://google.com\n"
-    "• Kadirur Village Office\n"
-    "  Services: Land mutation and community certificates\n"
+    "• Classic Tailors\n"
+    "  Location: 4th Mile, Kadirur\n"
     "---\n"
+    "കതിരൂരിലെ തയ്യൽക്കടകൾ:\n"
     "• H2O കതിരൂർ (ഹെർ ഒൺലി)\n"
     "  സ്ഥലം: കതിരൂർ\n"
     "  https://google.com\n"
-    "• കതിരൂർ വില്ലേജ് ഓഫീസ്\n"
-    "  സേവനങ്ങൾ: ഭൂമി പോക്കുവരവ്, കമ്മ്യൂണിറ്റി സർട്ടിഫിക്കറ്റുകൾ\n\n"
+    "• ക്ലാസിക് ടെയ്‌ലേഴ്സ്\n"
+    "  സ്ഥലം: നാലാം മൈൽ, കതിരൂർ\n\n"
     "Context:\n{context}"
 )
 
@@ -153,7 +158,7 @@ async def query_endpoint(request: QueryRequest):
             else str(response.content)
         )
 
-        # Format headings with bullets and keep sub-details indented without bullets
+        # Format category headers without bullets, entries with bullets, and sub-details indented
         if "---" in answer_text:
             eng, mal = answer_text.split("---", 1)
             answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
