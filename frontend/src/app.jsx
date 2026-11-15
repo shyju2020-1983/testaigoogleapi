@@ -119,6 +119,12 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0', boxSizing: 'border-box' }}>
+    <style>{`
+    .custom-chat-input::placeholder {
+      color: #7caee3 !important;
+      opacity: 1;
+    }
+  `}</style>
   <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
     <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff' }}>
       <b>Kadirur village AI Assistant</b>
