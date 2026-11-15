@@ -85,7 +85,8 @@ system_prompt = (
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
-    "5. LIST FORMAT RULE (STRICT): Always format EVERY response as a vertical bulleted list using '• ' at the start of every line. NEVER write comma-separated lists or long paragraphs. Put every single item, place, office, service, or detail on its own separate line.\n"
+    "5. LIST FORMAT RULE (STRICT): NEVER write sentences containing commas or 'and' to list multiple items (e.g., NEVER write 'A, B, and C'). Every single shop, place, name, or item MUST be placed on its own separate line starting with '• '.\n"
+
     "6. Format exactly as: [English bulleted list] followed by a new line with '---' followed by [Malayalam bulleted list].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "8. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character on its own bullet line in both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
