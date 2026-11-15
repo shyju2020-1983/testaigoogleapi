@@ -38,7 +38,6 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
         return file.read()
 
 def get_matching_blocks(context: str, question: str) -> str:
-    # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -57,7 +56,6 @@ def get_matching_blocks(context: str, question: str) -> str:
     }
     keywords = q_words - stop_words or q_words
 
-    # Collect all words from sample.txt to auto-correct user typos (e.g., "htels" -> "hotels")
     all_context_words = list(set(re.findall(r'\w+', context.lower())))
 
     expanded_keywords = set(keywords)
@@ -80,7 +78,7 @@ def get_matching_blocks(context: str, question: str) -> str:
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
-        first_line = lines[0].lower()
+        first_line = lines.lower()
         block_lower = block.lower()
         heading_words = set(re.findall(r'\w+', first_line))
         body_words = set(re.findall(r'\w+', block_lower))
@@ -93,7 +91,7 @@ def get_matching_blocks(context: str, question: str) -> str:
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=lambda item: item[0], reverse=True)
+    scored_blocks.sort(key=lambda item: item, reverse=True)
     all_matched_blocks = [b for _, b in scored_blocks]
 
     return "\n\n".join(all_matched_blocks) if all_matched_blocks else context[:8000]
@@ -231,4 +229,8 @@ async def query_endpoint(request: QueryRequest):
                 answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
             else:
                 answer_text += url_block
+
+        return {"answer": answer_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
