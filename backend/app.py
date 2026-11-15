@@ -154,8 +154,7 @@ system_prompt = (
     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "8. Copy every http:// or https:// URL verbatim on its own indented line without a bullet.\n\n"
-       "9. You must provide your response in both English and Malayalam.\n"
-    "Context:\n{context}"
+"Context:\n{context}"
 )
 
 prompt_template = ChatPromptTemplate.from_messages([
