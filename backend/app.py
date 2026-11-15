@@ -38,6 +38,17 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
+def get_matching_blocks(context: str, question: str) -> str:
+    """Finds the exact matching section(s) in sample.txt including all multi-line continuations."""
+    blocks = re.split(r'\n\s*\n', context.strip())
+    q_words = set(re.findall(r'\w+', question.lower()))
+    # Ignore common stop words so matching focuses on meaningful keywords
+    stop_words = {'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give', 'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur'}
+    keywords = q_words - stop_words or q_words
+
+    matched = [b.strip() for b in blocks if keywords & set(re.findall(r'\w+', b.lower()))]
+    return "\n\n".join(matched) if matched else context
+
 def get_matching_urls(context: str, question: str) -> list[str]:
     blocks = re.split(r'\n\s*\n', context.strip())
     q_words = set(re.findall(r'\w+', question.lower()))
@@ -55,44 +66,37 @@ def format_as_vertical_list(text: str) -> str:
         if not raw_line.strip():
             continue
 
-        is_sub_detail = raw_line.startswith(('  ', '\t'))
-        line = raw_line.strip()
+        is_indented = raw_line.startswith(('  ', '\t'))
+        stripped = raw_line.strip()
 
-        # 1. Category headers ending with ':' (e.g., "Elected representatives in Kadirur:") -> NO bullet point
-        if line.endswith(':') and not is_sub_detail:
-            line = re.sub(r'^[-*•\d.)]+\s*', '', line)
-            cleaned_lines.append(line)
+        # Check if this line originally had a bullet marker (•, -, *)
+        had_bullet = bool(re.match(r'^[-*•]\s+', stripped))
+        line_no_bullet = re.sub(r'^[-*•]+\s*', '', stripped)
+
+        # 1. Section headers ending with ':' (e.g., "Tailors in Kadirur:") -> NO bullet point
+        if line_no_bullet.endswith(':'):
+            cleaned_lines.append(line_no_bullet)
             continue
 
-        # 2. URLs -> NO bullet point, indented under the entry
-        if line.startswith(('http://', 'https://')) or 'http://' in line or 'https://' in line:
-            line = re.sub(r'^[-*•]+\s*', '', line)
-            cleaned_lines.append(f"  {line}")
+        # 2. URLs -> NO bullet point, indented cleanly
+        if line_no_bullet.startswith(('http://', 'https://')) or 'http://' in line_no_bullet or 'https://' in line_no_bullet:
+            cleaned_lines.append(f"  {line_no_bullet}")
             continue
 
-        # 3. Indented sub-details (e.g., "  Location: Kadirur") -> NO bullet point
-        if is_sub_detail:
-            line = re.sub(r'^[-*•]+\s*', '', line)
-            cleaned_lines.append(f"  {line}")
+        # 3. Lines that had a bullet in Context/response -> Keep '• '
+        if had_bullet:
+            cleaned_lines.append(f"• {line_no_bullet}")
             continue
 
-        # 4. Field labels (e.g., "Location: ...", "Phone: ...") -> NO bullet point
-        if re.match(r'^(Location|Address|Phone|Contact|Timing|Timings|Directions|Link|സ്ഥലം|വിലാസം|ഫോൺ|സമയം)\s*:', line, re.IGNORECASE):
-            line = re.sub(r'^[-*•]+\s*', '', line)
-            cleaned_lines.append(f"  {line}")
-            continue
-
-        # 5. Actual entry/ward/shop line -> Normalize bullet ('• ') and keep the full entry intact (including commas inside the line)
-        line = re.sub(r'^[-*•\d.)]+\s*', '', line).strip()
-        if line:
-            cleaned_lines.append(f"• {line}")
+        # 4. Continuation lines without a bullet -> Keep on next line WITHOUT adding a bullet
+        cleaned_lines.append(f"  {line_no_bullet}" if is_indented else line_no_bullet)
 
     return "\n".join(cleaned_lines)
 
 # STABLE INFRASTRUCTURE INTEGRATION TARGETING GEMINI 3.5 FLASH LITE
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
-    temperature=0.3,
+    temperature=0.1,
     # Below code for local running
     # google_api_key=MY_SECRET_KEY
     google_api_key=GOOGLE_API_KEY
@@ -101,28 +105,26 @@ llm = ChatGoogleGenerativeAI(
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. Prioritize provided Context. Copy each matching line from Context verbatim, including internal commas, dashes, and URLs. If unrelated, use general knowledge.\n"
+    "1. Prioritize provided Context. You MUST copy EVERY SINGLE LINE and EVERY CONTINUATION LINE of the matching entry from Context completely—never cut off, shorten, or drop the second/third lines of a multi-line entry. If unrelated, use general knowledge.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
-    "5. LIST & HEADING FORMAT RULE (STRICT):\n"
-    "   - If you include a category title ending with a colon (e.g., 'Elected representatives in Kadirur:'), write it WITHOUT a bullet point.\n"
-    "   - Put a bullet point ('• ') ONLY on each individual entry line from the Context (for example: '• Ward 1 - PULLIODE , RAJITHA T'). Keep the entire line together exactly as written in Context—do NOT split a single entry's commas into separate bullets.\n"
-    "   - Never merge multiple separate entries from Context into one comma-separated paragraph; put each Context bullet entry on its own line.\n"
-    "   - Any sub-details or URLs belonging to an entry MUST be on separate lines indented with 2 spaces ('  ') WITHOUT a bullet point.\n"
+    "5. LIST & CONTINUATION FORMAT RULE (STRICT):\n"
+    "   - Preserve the exact line-by-line bullet structure of the Context: put '• ' ONLY on lines that start with '• ' in the Context.\n"
+    "   - When a bulleted line in Context is followed by one or more continuation lines without a bullet, copy all continuation lines right below it on separate lines WITHOUT adding a bullet.\n"
+    "   - Keep internal commas and dashes inside a line intact (e.g., '• Ward 1 - PULLIODE , RAJITHA T').\n"
+    "   - Do NOT put a bullet point on section headers ending with ':' (e.g., 'Elected representatives in Kadirur:').\n"
     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "8. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character on its own indented line (without a bullet) under the matching entry in both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
     "EXAMPLE FORMAT:\n"
-    "User: Who are the elected representatives in Kadirur?\n"
+    "User: Tell me about Land of the Sun\n"
     "Response:\n"
-    "Elected representatives in Kadirur:\n"
-    "• Ward 1 - PULLIODE , RAJITHA T\n"
-    "• Ward 2 - KADIRUR , SAMPLE NAME\n"
+    "• Land of the Sun: Local tradition connects Kadirur with Surya worship.\n"
+    "The famous Kadirur Suryanarayana Temple is located in the heart of the village.\n"
     "---\n"
-    "കതിരൂരിലെ തിരഞ്ഞെടുക്കപ്പെട്ട ജനപ്രതിനിധികൾ:\n"
-    "• വാർഡ് 1 - പുള്ളിയോട് , രജിത ടി\n"
-    "• വാർഡ് 2 - കതിരൂർ , സാമ്പിൾ നെയിം\n\n"
+    "• സൂര്യന്റെ നാട്: പ്രാദേശിക പാരമ്പര്യം കതിരൂരിനെ സൂര്യാരാധനയുമായി ബന്ധിപ്പിക്കുന്നു.\n"
+    "പ്രശസ്തമായ കതിരൂർ സൂര്യനാരായണ ക്ഷേത്രം ഗ്രാമത്തിന്റെ ഹൃദയഭാഗത്താണ് സ്ഥിതി ചെയ്യുന്നത്.\n\n"
     "Context:\n{context}"
 )
 
@@ -139,10 +141,11 @@ class QueryRequest(BaseModel):
 @app.post("/api/query")
 async def query_endpoint(request: QueryRequest):
     try:
-        context_data = read_sample_file()
+        full_context = read_sample_file()
+        focused_context = get_matching_blocks(full_context, request.question)
 
         response = chain.invoke({
-            "context": context_data,
+            "context": focused_context,
             "question": request.question
         })
 
@@ -152,7 +155,7 @@ async def query_endpoint(request: QueryRequest):
             else str(response.content)
         )
 
-        # Format category headers without bullets, entries with bullets, and sub-details indented
+        # Preserve bullets on bulleted lines and keep continuation lines unbulleted
         if "---" in answer_text:
             eng, mal = answer_text.split("---", 1)
             answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
@@ -160,7 +163,7 @@ async def query_endpoint(request: QueryRequest):
             answer_text = format_as_vertical_list(answer_text)
 
         # Dynamically attach any URL from the matching section in sample.txt if Gemini left it out
-        matched_urls = get_matching_urls(context_data, request.question)
+        matched_urls = get_matching_urls(full_context, request.question)
         missing_urls = [u for u in matched_urls if u not in answer_text]
 
         if missing_urls:
