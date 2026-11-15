@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import operator
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -37,73 +36,8 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
 
-def extract_text(response) -> str:
-    if isinstance(response.content, list):
-        return "".join(
-            b.get("text", "") if isinstance(b, dict) else str(getattr(b, "text", b))
-            for b in response.content
-        ).strip()
-    return str(response.content or "").strip()
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash-lite",
-    temperature=0.2,
-    google_api_key=GOOGLE_API_KEY
-)
-
-MALAYALAM_KEYWORD_MAP = {
-    'ചരിത്രം': 'history',
-    'ഹോട്ടൽ': 'hotel hotels restaurant restaurants',
-    'ഹോട്ടലുകൾ': 'hotel hotels restaurant restaurants',
-    'റെസ്റ്റോറന്റ്': 'restaurant restaurants hotel hotels',
-    'റെസ്റ്റോറന്റുകൾ': 'restaurant restaurants hotel hotels',
-    'ഭക്ഷണം': 'restaurant hotel food',
-    'തയ്യൽ': 'tailor tailors',
-    'തയ്യൽക്കട': 'tailor tailors',
-    'തയ്യൽക്കടകൾ': 'tailor tailors',
-    'വാർഡ്': 'ward',
-    'വാർഡുകൾ': 'ward',
-    'ജനപ്രതിനിധി': 'representative elected ward',
-    'ജനപ്രതിനിധികൾ': 'representative elected ward',
-    'മെമ്പർ': 'ward representative',
-    'മെമ്പർമാർ': 'ward representative',
-    'ക്ഷേത്രം': 'temple suryanarayana',
-    'അമ്പലം': 'temple suryanarayana',
-    'സ്കൂൾ': 'school',
-    'സ്കൂളുകൾ': 'school',
-    'വിദ്യാലയം': 'school',
-    'ഓഫീസ്': 'office village',
-    'വില്ലേജ്': 'village office',
-    'ആശുപത്രി': 'hospital health clinic',
-    'ബാങ്ക്': 'bank',
-    'കടകൾ': 'shop shops',
-    'ഷോപ്പ്': 'shop shops',
-    'റോഡ്': 'road',
-    'സൂര്യൻ': 'sun surya',
-}
-
-def translate_dynamic_malayalam_query(question: str) -> str:
-    if not re.search(r'[\u0D00-\u0D7F]', question):
-        return question
-
-    extra_terms = []
-    for ml_word, en_words in MALAYALAM_KEYWORD_MAP.items():
-        if ml_word in question:
-            extra_terms.append(en_words)
-
-    try:
-        resp = llm.invoke(f"Translate this Malayalam query into simple English search keywords only: {question}")
-        dynamic_en = extract_text(resp)
-        if dynamic_en:
-            extra_terms.append(dynamic_en)
-    except Exception as e:
-        print("Dynamic Malayalam translation warning:", repr(e))
-
-    return f"{question} {' '.join(extra_terms)}".strip()
-
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str:
-    search_text = translate_dynamic_malayalam_query(question)
-
+    # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -115,7 +49,7 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         else:
             blocks.append(sec)
 
-    q_words = set(re.findall(r'\w+', search_text.lower()))
+    q_words = set(re.findall(r'\w+', question.lower()))
     stop_words = {
         'what', 'is', 'the', 'in', 'of', 'about', 'tell', 'me', 'give',
         'list', 'all', 'for', 'and', 'to', 'a', 'an', 'kadirur', 'details', 'are', 'show', 'any'
@@ -136,28 +70,35 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3) -> str
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
-        first_line = next(iter(lines))
+        first_line = lines[0]
         heading_words = set(re.findall(r'\w+', first_line.lower()))
         body_words = set(re.findall(r'\w+', block.lower()))
         score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=operator.itemgetter(0), reverse=True)
+    scored_blocks.sort(key=lambda item: item[0], reverse=True)
     top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
     return "\n\n".join(top_blocks) if top_blocks else context[:8000]
 
-def get_matching_urls(context: str, question: str) -> list:
-    search_text = translate_dynamic_malayalam_query(question)
+def get_matching_urls(context: str, question: str) -> list[str]:
     blocks = re.split(r'\n\s*\n', context.strip())
-    q_words = set(re.findall(r'\w+', search_text.lower()))
+    q_words = set(re.findall(r'\w+', question.lower()))
     matched_urls = []
     for block in blocks:
         if q_words & set(re.findall(r'\w+', block.lower())):
             urls = re.findall(r'https?://[^\s<>"\']+', block)
             matched_urls.extend(u.rstrip('.,;:!?)') for u in urls)
     return list(dict.fromkeys(matched_urls))
+
+def extract_text(response) -> str:
+    if isinstance(response.content, list):
+        return "".join(
+            b.get("text", "") if isinstance(b, dict) else str(getattr(b, "text", b))
+            for b in response.content
+        ).strip()
+    return str(response.content or "").strip()
 
 def format_as_vertical_list(text: str) -> str:
     cleaned_lines = []
@@ -192,10 +133,16 @@ def format_as_vertical_list(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash-lite",
+    temperature=0.2,
+    google_api_key=GOOGLE_API_KEY
+)
+
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. The user may ask questions in English OR any Malayalam phrasing. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
+    "1. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
@@ -240,6 +187,7 @@ async def query_endpoint(request: QueryRequest):
 
         answer_text = extract_text(response)
 
+        # Fallback if Gemini returns empty on a long section (such as History of Kadirur)
         if not answer_text and focused_context:
             eng_formatted = format_as_vertical_list(focused_context)
             mal_resp = mal_chain.invoke({"text": eng_formatted})
@@ -247,28 +195,32 @@ async def query_endpoint(request: QueryRequest):
             if mal_raw:
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
             else:
-answer_text = eng_formatted
-elif answer_text:
-if "---" in answer_text:
-eng, mal = answer_text.split("---", 1)
-answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
-else:
-eng_formatted = format_as_vertical_list(answer_text)
-mal_resp = mal_chain.invoke({"text": eng_formatted})
-mal_raw = extract_text(mal_resp)
-answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
-matched_urls = get_matching_urls(focused_context, request.question)
-missing_urls = [u for u in matched_urls if u not in answer_text]
-if missing_urls:
-url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
-if "---" in answer_text:
-eng, mal = answer_text.split("---", 1)
-answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
-else:
-answer_text += url_block
-return {"answer": answer_text}
-except Exception as e:
-raise HTTPException(status_code=500, detail=str(e))
-if name == "main":
-import uvicorn
-uvicorn.run(app, host="0.0.0.0", port=8000)
+                answer_text = eng_formatted
+        elif answer_text:
+            if "---" in answer_text:
+                eng, mal = answer_text.split("---", 1)
+                answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
+            else:
+                eng_formatted = format_as_vertical_list(answer_text)
+                mal_resp = mal_chain.invoke({"text": eng_formatted})
+                mal_raw = extract_text(mal_resp)
+                answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
+
+        matched_urls = get_matching_urls(focused_context, request.question)
+        missing_urls = [u for u in matched_urls if u not in answer_text]
+
+        if missing_urls:
+            url_block = "\n" + "\n".join(f"  {u}" for u in missing_urls)
+            if "---" in answer_text:
+                eng, mal = answer_text.split("---", 1)
+                answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
+            else:
+                answer_text += url_block
+
+        return {"answer": answer_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
