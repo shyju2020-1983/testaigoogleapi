@@ -23,7 +23,7 @@ load_dotenv()
 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
-# Below 2 line code is for local envirnment execution 
+# Below 2 line code is for local environment execution 
 if not GOOGLE_API_KEY:
     raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY environment variable is missing on this EC2 instance!")
 
@@ -48,24 +48,31 @@ def get_matching_urls(context: str, question: str) -> list[str]:
             matched_urls.extend(u.rstrip('.,;:!?)') for u in urls)
     return list(dict.fromkeys(matched_urls))
 
-# NEW HELPER: Forces output into clean vertical bullet points and splits accidental commas
 def format_as_vertical_list(text: str) -> str:
     cleaned_lines = []
+    # Splits on ", and ", ", & ", ", ", or " and " before a capitalized/Malayalam item
+    split_pattern = re.compile(r',\s*(?:and|&)\s+|,\s*|\s+and\s+(?=[A-Z0-9\u0D00-\u0D7F])')
+
     for raw_line in text.strip().splitlines():
         line = raw_line.strip()
         if not line:
             continue
 
-        # Remove existing bullet symbols (-, *, •, 1.) to normalize
+        # Remove existing bullet symbols (-, *, •, 1.)
         line = re.sub(r'^[-*•\d.)]+\s*', '', line)
 
-        # If line contains commas and is NOT a URL, split each item onto its own bullet line
-        if ',' in line and not line.startswith(('http://', 'https://')):
-            parts = [p.strip() for p in line.split(',') if p.strip()]
-            for part in parts:
-                cleaned_lines.append(f"• {part}")
-        else:
+        # Keep URLs intact on their own bullet line
+        if line.startswith(('http://', 'https://')) or 'http://' in line or 'https://' in line:
             cleaned_lines.append(f"• {line}")
+            continue
+
+        # Split comma-separated and ", and " items onto separate lines
+        parts = [p.strip() for p in split_pattern.split(line) if p.strip()]
+        for part in parts:
+            # Clean up any leftover leading "and " or trailing period
+            part = re.sub(r'^and\s+', '', part, flags=re.IGNORECASE).rstrip('.').strip()
+            if part:
+                cleaned_lines.append(f"• {part}")
 
     return "\n".join(cleaned_lines)
 
@@ -86,7 +93,6 @@ system_prompt = (
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
     "5. LIST FORMAT RULE (STRICT): NEVER write sentences containing commas or 'and' to list multiple items (e.g., NEVER write 'A, B, and C'). Every single shop, place, name, or item MUST be placed on its own separate line starting with '• '.\n"
-
     "6. Format exactly as: [English bulleted list] followed by a new line with '---' followed by [Malayalam bulleted list].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "8. MANDATORY URL RULE: Every http:// or https:// URL present in the matching Context entry MUST be copied verbatim character-for-character on its own bullet line in both the English and Malayalam responses. Never skip or drop long URLs.\n\n"
