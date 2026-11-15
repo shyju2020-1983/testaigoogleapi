@@ -230,3 +230,5 @@ async def query_endpoint(request: QueryRequest):
                 eng, mal = answer_text.split("---", 1)
                 answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
             else:
+                answer_text += url_block
+
