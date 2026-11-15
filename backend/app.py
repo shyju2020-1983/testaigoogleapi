@@ -173,6 +173,10 @@ async def query_endpoint(request: QueryRequest):
                 answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
             else:
                 answer_text += url_block
+# --- ADD THESE 4 LINES RIGHT ABOVE return {"answer": answer_text} ---
+        if not answer_text or not answer_text.strip():
+            answer_text = format_as_vertical_list(focused_context)
+        # ------------------------------------------------------------------
 
         return {"answer": answer_text}
     except Exception as e:
