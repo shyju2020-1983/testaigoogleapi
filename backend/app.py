@@ -1,3 +1,4 @@
+
 import os
 import re
 import sys
@@ -28,8 +29,6 @@ if not GOOGLE_API_KEY:
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_FILE_PATH = os.path.join(BASE_DIR, "sample.txt")
-
-
 
 def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     if not os.path.exists(file_path):
@@ -141,13 +140,10 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GOOGLE_API_KEY
 )
 
-
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
-    "1. SCOPE & CONTEXT RULE:\n"
-    "   - If the user asks about Kadirur village, local wards, local officials, or local places/services, answer ONLY using the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
-    "   - If the user asks a general knowledge question (such as the Prime Minister of India, capital cities, or general facts) that is NOT covered in the Context, answer accurately using your general knowledge while still following all formatting and translation rules below.\n"
+    "1. Answer ONLY the specific topic asked by the user using ONLY the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
@@ -159,7 +155,7 @@ system_prompt = (
     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "8. Copy every http:// or https:// URL verbatim on its own indented line without a bullet.\n\n"
-    "Context:\n{context}"
+"Context:\n{context}"
 )
 
 prompt_template = ChatPromptTemplate.from_messages([
