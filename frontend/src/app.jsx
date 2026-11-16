@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import bgImage from './AI-Wall.jpg';
 
 function App() {
-
-
   const [query, setQuery] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -69,8 +68,8 @@ function App() {
     setLoading(true);
     setErrorDetails(null);
 
-    const ec2PublicIp = "13.233.119.28";
-    const targetUrl = `http://${ec2PublicIp}:8000/api/query`;
+   const ec2PublicIp = "13.233.119.28";
+    const targetUrl = `http://${ec2PublicIp}:8000/api/query`;;
 
     // Below code for local running
     // const targetUrl = 'http://localhost:8000/api/query';
@@ -108,9 +107,7 @@ function App() {
       setLoading(false);
     }
   };
-//background
 
-//
   const handleClearChat = () => {
     setChatHistory([]);
     setErrorDetails(null);
@@ -118,58 +115,82 @@ function App() {
   };
 
   return (
-    <div style={{ backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0', boxSizing: 'border-box' }}>
-    <style>{`
-    .custom-chat-input::placeholder {
-      color: #7caee3 !important;
-      opacity: 1;
-    }
-  `}</style>
-  <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
-    <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff' }}>
-      <b>Kadirur village AI Assistant</b>
-    </h2>
-
-    {/* TOP ROTATING ADVERTISEMENT BANNER (SLIGHTLY LEFT, DIRECTLY BELOW TITLE) */}
     <div
       style={{
+        backgroundColor: '#121212',
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        minHeight: '100vh',
+        width: '100%',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
-        paddingRight: '10px',
-        marginBottom: '18px',
+        alignItems: 'center',
+        padding: '20px',
+        boxSizing: 'border-box',
       }}
     >
+      <style>{`
+        .custom-chat-input::placeholder {
+          color: #7caee3 !important;
+          opacity: 1;
+        }
+      `}</style>
+
       <div
         style={{
-          backgroundColor: 'rgba(0, 123, 255, 0.12)',
-          border: '1px solid rgba(0, 123, 255, 0.4)',
-          borderRadius: '8px',
-          padding: '6px 12px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
+          width: '100%',
+          maxWidth: '600px',
+          margin: '0 auto',
+          padding: '20px',
+          fontFamily: 'sans-serif',
+          color: '#ffffff',
         }}
       >
-        <span
+        <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff' }}>
+          <b>Kadirur village AI Assistant</b>
+        </h2>
+
+        {/* TOP ROTATING ADVERTISEMENT BANNER */}
+        <div
           style={{
-            backgroundColor: '#007bff',
-            color: '#ffffff',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            letterSpacing: '0.5px',
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '18px',
           }}
         >
-          AD
-        </span>
-        <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#90caf9' }}>
-          {adText}
-        </span>
-      </div>
-    </div>
-
-        
+          <div
+            style={{
+              backgroundColor: 'rgba(0, 123, 255, 0.12)',
+              border: '1px solid rgba(0, 123, 255, 0.4)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span
+              style={{
+                backgroundColor: '#007bff',
+                color: '#ffffff',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                letterSpacing: '0.5px',
+              }}
+            >
+              AD
+            </span>
+            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#90caf9' }}>
+              {adText}
+            </span>
+          </div>
+        </div>
 
         {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
@@ -234,7 +255,7 @@ function App() {
         </div>
 
         {/* PERSISTENT INPUT ROW */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginTop: '20px', position: 'sticky', bottom: '20px', backgroundColor: '#121212', padding: '10px 0' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginTop: '20px', position: 'sticky', bottom: '20px', backgroundColor: 'transparent', padding: '10px 0' }}>
           <input
             type="text"
             className="custom-chat-input"
@@ -244,19 +265,18 @@ function App() {
             disabled={loading}
             style={{
               flexGrow: 1,
-              padding: '12px',
-              fontSize: '15px',
-              backgroundColor: '#222',
-              border: '1px solid #444',
-              color: '#fff',
-              borderRadius: '6px',
-              outline: 'none',
-              opacity: loading ? 0.5 : 1,
-              cursor: loading ? 'not-allowed' : 'text',
-              transition: 'all 0.2s ease-in-out'
-            }}
-          />
-           <button
+              padding: '12px',fontSize: '15px',
+backgroundColor: 'rgba(34, 34, 34, 0.9)',
+border: '1px solid #444',
+color: '#fff',
+borderRadius: '6px',
+outline: 'none',
+opacity: loading ? 0.5 : 1,
+cursor: loading ? 'not-allowed' : 'text',
+transition: 'all 0.2s ease-in-out'
+}}
+/>
+ <button
             type="submit"
             disabled={loading}
             style={{
