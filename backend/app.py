@@ -29,6 +29,12 @@ if not GOOGLE_API_KEY:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_FILE_PATH = os.path.join(BASE_DIR, "sample.txt")
 
+
+# 1. Load the entire text file and clean tab characters
+with open(SAMPLE_FILE_PATH, "r", encoding="utf-8") as f:
+    context_data = f.read().replace("\t", " ")
+
+
 def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
     if not os.path.exists(file_path):
         with open(file_path, "w", encoding="utf-8") as f:
@@ -138,6 +144,7 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.2,
     google_api_key=GOOGLE_API_KEY
 )
+
 
 system_prompt = (
     "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
