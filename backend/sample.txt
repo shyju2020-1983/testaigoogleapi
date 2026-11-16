@@ -1,6 +1,6 @@
 VILLAGE NAME: Kadirur, Kathiroor
 
-CATEGORY: Kadirur, Kathiroor village details 
+CATEGORY: Kadirur, Kathiroor village details / കതിരൂർ ഗ്രാമത്തിൻ്റെ വിവരം 
 
 # Kadirur/kathiroor village Overview 
 • Kadirur is a census town and Grama Panchayat of Kannur district in the State of Kerala, India. 
@@ -12,25 +12,25 @@ CATEGORY: Kadirur, Kathiroor village details
 • Kadirur (also spelled Kathiroor) is a historical census town Grama Panchayat in the Thalassery taluk of Kannur district, Kerala, India.
 hhh
 
-## Name Origin 
+## Name Origin / ഉത്ഭവം 
 
 
 • Land of the Sun: Local tradition and legends trace the name to Kadiravanur (the settlement of the Sun God, Kadiravan), linked to the ancient Kadirur Surya Narayana Temple.
 • Paddy Fields: Another tradition notes that because the area was filled with lush, ripe ears of paddy (Kathir), it became known as Kadirur (the place of the grain ear).
 
-## Ancient & Religious History
+## Ancient & Religious History / പുരാതനവും മതപരവുമായ ചരിത്രം
 
 
 • Suryanarayana Temple: The Kadirur Surya Narayana Temple is considered one of the oldest Surya temples in South India, with roots traced back to the 13th century or mythical legends involving Lord Rama and Sage Agastya.
 • Mysore Invasion: During the campaigns of Tipu Sultan in 1789, the temple was attacked and left deserted for decades until it was renovated in 1825 by Kappanna Karunakara Menon under British administration. It was later taken over by the HR & CE department in 1973.
 
-## Martial & Feudal Heritage
+## Martial & Feudal Heritage / ആയോധന-നാടുവാഴിത്ത പാരമ്പര്യം
 
 
 • Kalaripayattu Lineage: The region has a deep tradition in martial arts, famously associated with figures like Mathiloor Gurukkal and local folklore like the Ponnyath Ankam.
 • Feudal Lords: Historically, vast tracts of land were controlled by prominent local janmi families and landlords, such as the Thamprakkal of Ponnuyathakathoottu Mana, Kavunkara Illam, and others who managed tenant farming and local administration.
 
-## Freedom Movement & Modern Era
+## Freedom Movement & Modern Era / സ്വാതന്ത്ര്യസമര ചരിത്രവും ആധുനിക യുഗവും
 
 
 • National Struggle: Kadirur played a vibrant role in the Indian independence movement. Dr. Rajendra Prasad visited Kathiroor in 1934, and the Kottayam Taluk Congress session was hosted here in Kathiroor Vayal in 1936, anchored by local leaders like Madappally Gopalan and K.K. Kunhikrishnan Adiyodi.
@@ -38,14 +38,14 @@ hhh
 • test
 
 
-## Kadirur/kathiroor village Geography 
+## Kadirur/kathiroor village Geography / സ്ഥാനവും വിസ്തീർണ്ണവും
 • Location: Situated roughly 7 to 8 km southeast of Thalassery town, acting as a prominent suburb.
 • Main Road: Labeled along State Highway 30 (SH 30), popularly known as the Thalassery–Coorg / Thalassery–Mysore road.
 • Area: Covers about 12.3 sq km (4.7 sq mi).
 • Coordinates: 11°46′N 75°31′E.
 
 
-## Demographics (2011 Census)
+## Demographics (2011 Census) / ജനസംഖ്യാ
 
 • Total Population: 31,087 residents across 6,817 households.
 • Sex Ratio: 1,232 females per 1,000 males (significantly higher than the Kerala state average).
@@ -53,7 +53,7 @@ hhh
 • PIN Code: 670642.
 
 
-## Transportation 
+## Transportation / ഗതാഗതം
 
 • The National Highway 66 commonly referred to as NH-66 passes through Thalassery town. 
 Goa and Mumbai can be accessed on the northern side and Cochin and Thiruvananthapuram can be accessed on the southern side.
@@ -62,7 +62,7 @@ Trains are available to almost all parts of India subject to advance booking ove
 Both of them are international airports but direct flights are available only to Middle Eastern countries. The major road passing through kadirur is the State Highway 30 (SH 30) a.k.a. Thalassery - coorg road.
 
 
-## Connectivity in kadirur 
+## Connectivity in kadirur / കതിരൂരിലെ കണക്റ്റിവിറ്റി
 
 The nearest major transport hubs serving Kadirur in Kerala include the following options:
 
@@ -108,7 +108,7 @@ If you'd like, let me know:
 Kadirur (located in the Kannur district of Kerala) has a tropical monsoon climate (Am under the Köppen classification), characterized by high humidity, warm temperatures year-round, and distinct seasonal rainfall patterns.
 
 
-## Key Climate Characteristics
+## Key Climate Characteristics / താപനില
 
 • Temperature:
 	• Average daily highs range around 31°C to 33°C (88°F–91°F), and can peak higher during the summer months.
@@ -126,7 +126,7 @@ Kadirur (located in the Kannur district of Kerala) has a tropical monsoon climat
 The most famous personalities associated with Kadirur include:
 
 
-### Martial Arts & Legends -
+## Martial Arts & Legends / ആയോധനകലകളും ഐതിഹ്യങ്ങളും -
 
 • THE EPICENTER OF KALARIPAYATTU: Kadirur holds a monumental, century-old status in North Kerala's history as a prominent training hub for Kalaripayattu, the ancient traditional Indian martial art form.
 • THE LEGEND OF THACHOLI OTHENAN: In the 16th century, the historic Ezharakandam field (also known as Azharakandam Mythanam) in Ponniam was the site of the legendary "Ankam" (medieval duel) between the famous folkloric hero Thacholi Othenan and his master, Kathirur Gurukkal. The duel ended tragically when Othenan used an unethical combat move called 'Poozhikadakam' (beheading his master) to win. Shortly after, Othenan was shot dead in a revenge assassination by a rival disciple named Mayankutty.
@@ -134,24 +134,24 @@ The most famous personalities associated with Kadirur include:
 •PONNIATHANKAM FESTIVAL: To commemorate these legendary 16th-century warriors, a massive annual martial arts festival called "Ponniathankam" is organized at the Ezharakandam field every year during the Malayalam month of Kumbham (February–March) by the Kerala Folklore Academy. Recognized as the world's largest Kalaripayattu festival, this 7-day event serves as a major showcase for skilled performance artists. The Kerala state government allocated 8 crores for the preservation and promotion of this heritage site.
 
 
-### Literature & Academia -
+## Literature & Academia / സാഹിത്യവും അക്കാദമിക രംഗവും -
 
 • V.V.K. (Valiya Veetil Kunnikannan Gurukkal) (1091–1962): A widely celebrated poet and Malayalam teacher at Kadirur High School. His famous works include Suvarna Meghala, Hridayagayakan, and Nirvana Mandalam.
 • K.V. Manan Gurukkal (1890–1965): Born in Kadirur, he was a distinguished Malayalam professor at Government Brennen College. He is remembered for his anthology of poems Divakara Chinta and his essay collection Sameeksha Soudham.
 
 
-### Politics & Public Service -
+## Politics & Public Service / രാഷ്ട്രീയ -
 
 • P. Jayarajan: A prominent political leader from Kerala who has served as a Member of the Legislative Assembly (MLA) and held key leadership positions within the CPI(M) in Kannur.
 • Chathukutty Nair: A highly respected early local leader who served as the President of the Kadirur Panchayat.
 
 
-### Cinema (Associated Figures) -
+## Cinema / സിനിമ-
 
 Sreenivasan: While born in the neighboring village of Patyam, the legendary Malayalam film actor, screenwriter, and director completed his pivotal early education at Government High School, Kadirur.
 
 
-## Administration & Politics :
+## Administration & Politics / ഭരണവും രാഷ്ട്രീയവും :
 
 • Local Body: Kathiroor Grama Panchayat.
 • Assembly Constituency: Thalassery (MLA: Adv. A. N. Shamseer).
@@ -285,7 +285,8 @@ panchayat by ensuring public participation and providing transparent governance 
 
 ## Kadirur / Kathiroor Village  office / വില്ലേജ് ഓഫീസ് :
 
-### About kadirur village office  
+• About kadirur village office  
+
 Kathirur derives its name from the word Kathirur, which means the Ur of Kathir, as it is a land rich in paddy fields. 
 The match between Mathilur Guru and Thacholi Othenan took place at Kathirur village.
 The gold medal is very famous. History has it that during the British rule, the village courts of Kathirur were 
@@ -294,7 +295,7 @@ in Kathirur was given to the Kookkal family. For about thirty years the tax was 
 Kookal clan. After his death, the village was reorganized on 1.9.1961 and the existing Ponniam section was merged with 
 the Kathirur section to form the present Kathirur Village.
 
-### kadirur village office services / വില്ലേജ് ഓഫീസ് സേവനങ്ങൾ
+• kadirur village office services / വില്ലേജ് ഓഫീസ് സേവനങ്ങൾ
 
 • Revenue services 
 • Village office Services 
@@ -333,7 +334,7 @@ the Kathirur section to form the present Kathirur Village.
 • Indigent Certificate
 • Legal Heirship Certificate
 
-### Village office activities / വില്ലേജ് ഓഫീസ് പ്രവർത്തനങ്ങൾ  :
+ • Village office activities / വില്ലേജ് ഓഫീസ് പ്രവർത്തനങ്ങൾ  :
 
 • Protection and maintenance of Government lands and trees therein
 • Collection of land tax, plantation tax, building tax etc.
@@ -349,16 +350,13 @@ the Kathirur section to form the present Kathirur Village.
 
 
 
-### Kadirur village office contact details / വില്ലേജ് ഓഫീസ് ബന്ധപ്പെടാനുള്ള വിവരങ്ങൾ  :
+• Kadirur village office contact details / വില്ലേജ് ഓഫീസ് ബന്ധപ്പെടാനുള്ള വിവരങ്ങൾ  :
 Village Office Kathirur
 Kathirur P O, Kerala, Pincode: 670642
 Email: vo-katheerur.rev@kerala.gov.in
 
-### Hospitals/ Clinics in Kadirur :
-•  Sreyas Hospital
- 
-Medical clinic
-
+## Hospitals/ Clinics in Kadirur :
+• Sreyas Hospital
 Directions
 • Address: Kayalode Kadirur Rd, Kadirur, Kerala 670642
 • Phone: +91 490 230 6395
@@ -628,7 +626,7 @@ On-site services
 Website
 Directions
 
-## Medical shops in kadirur / മെഡിക്കൽ ഷോപ്പുകൾ  :
+## Medical shops in kadirur / മെഡിക്കൽ ഷോപ്പുകൾ / മെഡിക്കൽകടകൾ :
 
 • Medsave Pharma
 Pharmacy
@@ -947,14 +945,14 @@ Directions
 
 • Kadirur Service Co-operative Bank
 Bank
-QGQM+658, SH30 · 0490 230 6463
+SH30 · 0490 230 6463
 Open · Closes 5:30 am Tue
-Directions
+
 
 • CANARA BANK ATM
 ATM
-QGQP+X5P, KADIRUR BRANCH,KRISHNA BUILDING,5TH MILE KADIRUR(PO · 1800 1030
-Permanently closed
+ KADIRUR BRANCH,KRISHNA BUILDING,5TH MILE KADIRUR - PO · 1800 1030
+
 
 ## Tution centers/Study centers  in Kadirur / ട്യൂഷൻ സെന്ററുകൾ/പഠന കേന്ദ്രങ്ങൾ :
 
@@ -1029,7 +1027,7 @@ Location: Kizhakke Kadirur (near School), Kannur district, Kerala
 Opening Hours: Opens daily at 10:00 AM
 Details: Listed as a furniture manufacturer and retail sales depot with several years of local operation.
 
-## Fruits shops in kadirur / പഴക്കടകൾ / ഫ്രൂട്ട് സ്റ്റോർ:
+## Fruits shops in kadirur / പഴ കടകൾ / ഫ്രൂട്ട് സ്റ്റോർ:
 
 • Liva SuperMarket - Kadirur
 Supermarket
@@ -1058,7 +1056,7 @@ Delivery
 • Shobha Bakery 
 Kadirur town , kadorur 
 
-## Supplyco store in kadirur / സപ്ലൈകോ സൂപ്പർമാർക്കറ്റ്  :
+## Supplyco store in kadirur / സപ്ലൈകോ സൂപ്പർമാർക്കറ്റ് / സപ്ലൈകോ കടകൾ :
 
 • Supplyco Supermarket Kadirur
 5th Mile, SH30 · 0490 230 6750
@@ -1168,7 +1166,7 @@ No reviews · Police station
 QGJM+PV4 · 0490 230 5888
 Open 24 hours
 
-## Crackers shop in kadirur / പടക്കക്കടകൾ :
+## Crackers shop in kadirur / പടക്ക കടകൾ :
 
 • Babu's Fire Works
 4.6(16) · Fireworks store
@@ -1184,7 +1182,7 @@ Closed · Opens 9 am Tue
 "Reasonable price and good quality crackers"
 Directions
 
-## Textile shops in kadirur / തുണിക്കടകൾ:
+## Textile shops in kadirur / തുണി കടകൾ:
 
 • Dass Handlooms
 5.0(7) · Garment Exporter
@@ -1528,10 +1526,10 @@ Closes 7:30 pm
 3rd mile, near RTO Office · 097444 77255
 Closes 7 pm
 
-## Driving schools in Kadirur :
+## Driving schools in Kadirur / ഡ്രൈവിംഗ് സ്കൂളുകൾ:
 No data found
 
-## Flour mill in Kadirur 
+## Flour mill in Kadirur / ധാന്യങ്ങൾ പൊടിക്കുന്ന
 
 • Chayithanya flour mill :
 Flour mill
@@ -1555,14 +1553,14 @@ kadirur town
 SH30, opposite to KSEB Kadirur, Kadirur, Kerala.
 
 
-## Pooja Store in Kadirur 
+## Pooja Store in Kadirur / പൂജ സ്റ്റോർ
 • Test pooja store , kadirur town
 
 
 
 
 
-## Matrimony Listings in Kadirur / വിവാഹ ആലോചനകൾ):
+## Matrimony details in Kadirur / വിവാഹ ആലോചനകൾ:
 
 Grooms 
 
