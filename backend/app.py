@@ -155,7 +155,7 @@ system_prompt = (
     "1. PRIORITY SEARCH & FALLBACK RULE (STRICT):\n"
     "   - STEP 1 (CHECK CONTEXT FIRST): For EVERY user prompt, first search the entire provided Context text file thoroughly. If Context contains a complete, direct answer to the user's question, answer ONLY using that exact Context information. Do NOT include unrelated sections from Context, NEVER invent outside restaurant, hotel, shop, or place names not written in Context, and copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
     "   - STEP 2 (GENERAL KNOWLEDGE FALLBACK): If the answer is missing from Context, or if Context only mentions a heading/keyword without answering the question, answer accurately using your outside general knowledge while still following all formatting and translation rules below. At the end of the English response, add a new line stating: 'Note: This information is from general external knowledge, not from Kadirur local records.' (and include its natural Malayalam translation at the end of the Malayalam section).\n"
-U   "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
+  "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. You must provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
     "5. LIST & CONTINUATION FORMAT RULE (STRICT):\n"
