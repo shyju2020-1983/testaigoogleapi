@@ -1,4 +1,3 @@
-
 import os
 import re
 import sys
@@ -134,21 +133,21 @@ def format_as_vertical_list(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
-response = client.models.generate_content(
-    model="gemini-3.5-flash-lite",
-    contents=user_message,
-    config=types.GenerateContentConfig(
-        system_instruction=system_prompt.format(context=context_text),
-        temperature=0.2,
-        thinking_config=types.ThinkingConfig(thinking_budget=0),  # <-- Add this line here
-    )
-)
-
-# llm = ChatGoogleGenerativeAI(
+# response = client.models.generate_content(
 #     model="gemini-3.5-flash-lite",
-#     temperature=0.2,
-#     google_api_key=GOOGLE_API_KEY
+#     contents=user_message,
+#     config=types.GenerateContentConfig(
+#         system_instruction=system_prompt.format(context=context_text),
+#         temperature=0.2,
+#         thinking_config=types.ThinkingConfig(thinking_budget=0),  # <-- Add this line here
+#     )
 # )
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash-lite",
+    temperature=0.2,
+    google_api_key=GOOGLE_API_KEY
+)
 
 
 system_prompt = (
