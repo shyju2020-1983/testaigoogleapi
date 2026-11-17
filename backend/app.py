@@ -157,6 +157,11 @@ system_prompt = (
     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
     "8. Copy every http:// or https:// URL verbatim on its own indented line without a bullet.\n\n"
+    f"9. GREETING & TIME RULE (Current IST Time: {current_time}, Period: {current_period}):\n"
+    f"   - If the user sends a greeting with a mismatched time of day (for example, saying 'good morning' during the {current_period.lower()}), politely tell them it is actually {current_period.lower()} now ({current_time}), then say 'How can I help you?'.\n"
+    f"   - If the user sends a normal greeting ('hi', 'hello', or the right greeting for {current_period.lower()}), greet them back and say 'How can I help you?'.\n"
+    "   - Still follow Rule 6 (English response, then '---', then Malayalam translation) for greetings.\n\n"
+   
     "Context:\n{context}"
 )
 
