@@ -141,7 +141,7 @@ llm = ChatGoogleGenerativeAI(
 )
 
 system_prompt = (
-    "You are the official Kadirur village chatbot. Respond concisely without introductory filler.\n"
+    "I am Kadirur village AI assistant. How can i help you today. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
     "1. SCOPE & CONTEXT RULE:\n"
     "   - If the user asks about Kadirur village, local wards, local officials, or local places/services, answer ONLY using the matching section from the provided Context. Do NOT include unrelated sections from Context, and NEVER invent or add any outside restaurant, hotel, shop, or place names not written in Context. Copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
