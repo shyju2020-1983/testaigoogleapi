@@ -134,11 +134,23 @@ def format_as_vertical_list(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
-llm = ChatGoogleGenerativeAI(
+response = client.models.generate_content(
     model="gemini-3.5-flash-lite",
-    temperature=0.2,
-    google_api_key=GOOGLE_API_KEY
+    contents=user_message,
+    config=types.GenerateContentConfig(
+        system_instruction=system_prompt.format(context=context_text),
+        temperature=0.2,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),  # <-- Add this line here
+    )
 )
+
+# llm = ChatGoogleGenerativeAI(
+#     model="gemini-3.5-flash-lite",
+#     temperature=0.2,
+#     google_api_key=GOOGLE_API_KEY
+# )
+
+
 system_prompt = (
     "I am Kadirur village AI assistant. How can i help you today. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
@@ -176,10 +188,7 @@ system_prompt = (
 #     "6. Format exactly as: [English response] followed by a new line with '---' followed by [Malayalam translation].\n"
 #     "7. Never use markdown asterisks (**) or bold text indicators anywhere.\n"
 #     "8. Copy every http:// or https:// URL verbatim on its own indented line without a bullet.\n\n"
-#     "9. PRIORITY SEARCH & FALLBACK RULE (STRICT):\n"
-#     "   - STEP 1 (CHECK CONTEXT FIRST): For EVERY user prompt, first search the entire provided Context text file thoroughly. If the answer or matching section exists anywhere in Context, answer ONLY using that exact Context information. Do NOT add outside details, and copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
-#     "   - STEP 2 (GENERAL KNOWLEDGE FALLBACK): ONLY if the answer is completely missing from the provided Context, answer accurately using your outside general knowledge while still following all formatting and translation rules below.\n"
-
+#     
 #     "Context:\n{context}"
 # )
 
