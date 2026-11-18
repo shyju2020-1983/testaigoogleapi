@@ -42,7 +42,6 @@ def read_sample_file(file_path: str = SAMPLE_FILE_PATH) -> str:
 
 
 def get_matching_blocks(context: str, question: str, max_blocks: int = 3, is_followup: bool = False) -> str:
-    # Split by '#' / '##' headings so each heading stays attached to all its items underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', context.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -76,19 +75,18 @@ def get_matching_blocks(context: str, question: str, max_blocks: int = 3, is_fol
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
-        first_line = lines[0]
+        first_line, *_ = lines
         heading_words = set(re.findall(r'\w+', first_line.lower()))
         body_words = set(re.findall(r'\w+', block.lower()))
         score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
         if score > 0:
             scored_blocks.append((score, block))
 
-    scored_blocks.sort(key=lambda item: item[0], reverse=True)
+    scored_blocks.sort(reverse=True)
     top_blocks = [b for _, b in scored_blocks[:max_blocks]]
 
     if top_blocks:
         return "\n\n".join(top_blocks)
-    # If nothing matches during a follow-up question, return empty so general knowledge answers cleanly
     return "" if is_followup else context[:8000]
 
 
@@ -195,7 +193,6 @@ mal_prompt = ChatPromptTemplate.from_messages([
 
 mal_chain = mal_prompt | llm
 
-# Cache sample.txt in memory at startup + cache recent answers in RAM
 CACHED_CONTEXT = read_sample_file()
 ANSWER_CACHE = {}
 
@@ -218,9 +215,10 @@ def query_endpoint(request: QueryRequest):
         if not clean_q:
             raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
+        recent_items = request.history[-3:]
         history_text = "\n".join(
             f"User: {h.get('question', '')}\nAssistant: {h.get('answer', '')}"
-            for h in request.history[-3:]
+            for h in recent_items
         ) or "None"
 
         cache_key = f"{clean_q.lower()}|{history_text}"
@@ -229,16 +227,17 @@ def query_endpoint(request: QueryRequest):
             return {"answer": ANSWER_CACHE[cache_key]}
 
         full_context = CACHED_CONTEXT or read_sample_file()
-        is_followup = len(request.history) > 0
-        search_query = f"{request.history[-1]['question']} {clean_q}" if is_followup else clean_q
-focused_context = get_matching_blocks(full_context, search_query, is_followup=is_followup)
-response = chain.invoke({
-"context": focused_context or "No matching local Kadirur records found.",
-"history": history_text,
+        is_followup = len(recent_items) > 0
+        last_q = recent_items[-1].get("question", "") if is_followup else ""
+        search_query = f"{last_q} {clean_q}".strip()
+        focused_context = get_matching_blocks(full_context, search_query, is_followup=is_followup)
+
+        response = chain.invoke({
+            "context": focused_context or "No matching local Kadirur records found.",
+            "history": history_text,
 "question": clean_q
 })
 answer_text = extract_text(response)
-# Fallback if Gemini returns empty on a long section (such as History of Kadirur)
 if not answer_text and focused_context:
 eng_formatted = format_as_vertical_list(focused_context)
 mal_resp = mal_chain.invoke({"text": eng_formatted})
