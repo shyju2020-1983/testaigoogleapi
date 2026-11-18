@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Load your API key exactly like your working code
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
 app = FastAPI()
 
 app.add_middleware(
@@ -20,10 +23,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Clean, crash-proof LLM initialization (no unsupported model_kwargs)
+# 1. Your exact working model & API key + fast timeout
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",  # Fast, reliable production model
+    model="gemini-3.5-flash-lite",
     temperature=0.2,
+    google_api_key=GOOGLE_API_KEY,
     timeout=15,
     max_retries=1,
 )
@@ -148,7 +152,6 @@ class QueryRequest(BaseModel):
     history: list = []
 
 
-# Quick browser test endpoint: open http://YOUR_EC2_IP:8000/ in browser to verify connection
 @app.get("/")
 def health_check():
     return {"status": "online", "message": "Kadirur AI Backend is running"}
