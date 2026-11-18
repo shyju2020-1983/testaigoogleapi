@@ -263,17 +263,19 @@ eng, mal = answer_text.split("---", 1)
 answer_text = f"{eng.strip()}{url_block}\n---\n{mal.strip()}{url_block}"
 else:
 answer_text += url_block
-if answer_text:
-if len(ANSWER_CACHE) >= 200:
-ANSWER_CACHE.pop(next(iter(ANSWER_CACHE)))
-ANSWER_CACHE[cache_key] = answer_text
-print(f"[GEMINI DONE] {time.time() - start_time:.2f}s")
-return {"answer": answer_text}
-except HTTPException:
-raise
-except Exception as e:
-print(f"[ERROR] {time.time() - start_time:.2f}s -> {e}")
-raise HTTPException(status_code=500, detail=str(e))
-if name == "main":
-import uvicorn
-uvicorn.run(app, host="0.0.0.0", port=8000)
+  if answer_text:
+            if len(ANSWER_CACHE) >= 200:
+                ANSWER_CACHE.pop(next(iter(ANSWER_CACHE)))
+            ANSWER_CACHE[cache_key] = answer_text
+            print(f"[GEMINI DONE] {time.time() - start_time:.2f}s")
+            return {"answer": answer_text}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] {time.time() - start_time:.2f}s -> {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
