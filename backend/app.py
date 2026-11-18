@@ -146,6 +146,7 @@ def format_as_vertical_list(text: str) -> str:
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.2,
+    thinking_level="minimal",
     google_api_key=GOOGLE_API_KEY
 )
 # This code will write in case llm providing answer from out of file 
