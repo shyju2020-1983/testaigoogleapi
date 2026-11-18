@@ -22,17 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Clean initialization matching your working EC2 package version
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.2,
     google_api_key=GOOGLE_API_KEY,
-    timeout=15,
-    max_retries=1,
 )
 
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONTEXT_FILE_PATH = os.path.join(BASE_DIR, "sample.txt")
+CONTEXT_FILE_PATH = "sample.txt"  # <-- Matches your working file path
 
 
 def read_sample_file() -> str:
