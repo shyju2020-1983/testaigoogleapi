@@ -14,7 +14,6 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 app = FastAPI()
 
-# Fixed: allow_credentials=False is required when allow_origins=["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,7 +43,6 @@ def get_matching_blocks(full_text: str, question: str) -> str:
     if not full_text:
         return ""
 
-    # Keep '#' / '##' headings attached to all bullets and lines underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', full_text.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -64,7 +62,6 @@ def get_matching_blocks(full_text: str, question: str) -> str:
     }
     keywords = q_words - stop_words or q_words
 
-    # Expand singular/plural and common spelling variations (ads/ad, restaurant/restaurent/hotel)
     expanded_keywords = set(keywords)
     for w in keywords:
         if w.endswith('s') and len(w) > 3:
@@ -247,11 +244,11 @@ def query_endpoint(request: QueryRequest):
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
             else:
                 answer_text = eng_formatted
-elif answer_text:
-if "---" in answer_text:
-eng, mal = answer_text.split("---", 1)
-answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
-else:
+        elif answer_text:
+            if "---" in answer_text:
+                eng, mal = answer_text.split("---", 1)
+                answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
+            else:
 eng_formatted = format_as_vertical_list(answer_text)
 mal_resp = mal_chain.invoke({"text": eng_formatted})
 mal_raw = extract_text(mal_resp)
@@ -272,7 +269,7 @@ ANSWER_CACHE[cache_key] = answer_text
 print(f"[GEMINI DONE] {time.time() - start_time:.2f}s")
 return {"answer": answer_text}
 except HTTPException:
-    raise
+raise
 except Exception as e:
 print(f"[ERROR] {time.time() - start_time:.2f}s -> {e}")
 raise HTTPException(status_code=500, detail=str(e))
