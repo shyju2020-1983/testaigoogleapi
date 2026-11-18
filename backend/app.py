@@ -22,14 +22,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Clean initialization matching your working EC2 package version
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite",
     temperature=0.2,
     google_api_key=GOOGLE_API_KEY,
 )
 
-CONTEXT_FILE_PATH = "sample.txt"  # <-- Matches your working file path
+CONTEXT_FILE_PATH = "sample.txt"
 
 
 def read_sample_file() -> str:
@@ -247,9 +246,9 @@ def query_endpoint(request: QueryRequest):
             if mal_raw:
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
             else:
-answer_text = eng_formatted
-elif answer_text:
-if "---" in answer_text:
+                answer_text = eng_formatted
+        elif answer_text:
+            if "---" in answer_text:
 eng, mal = answer_text.split("---", 1)
 answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
 else:
