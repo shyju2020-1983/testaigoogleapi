@@ -1614,7 +1614,7 @@ demand - above 35
 
 ## ADS / ads / Ads :
 
-You can give advertiseent in below categories 
+-You can give advertiseent in below categories 
 
 • Your business details 
 • Your work related contact number for people to contact you for any work
