@@ -1612,13 +1612,14 @@ demand - above 35
 
 • Old TV, kadirur, phone 77888
 
-## AD / ad :
+## ADS / ads :
 
 You can give advertiseent in below categories 
 • Your business details 
+• Your work related contact number for people to contact you for any work
 • Your shop details 
-• If you want to sale anything 
-• Any property details
+• If you want to sale any household items
+• Any property or real estate details
 • Any general information about Kadirur
 
 
