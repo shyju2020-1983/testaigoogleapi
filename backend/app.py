@@ -1,6 +1,6 @@
 import os
 import re
-import sys
+import time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -20,19 +20,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Initialize LLM with minimal thinking for lowest latency
+# 1. Clean, crash-proof LLM initialization (no unsupported model_kwargs)
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash",  # Or "gemini-3.5-flash-lite" for even faster responses
+    model="gemini-2.5-flash",  # Fast, reliable production model
     temperature=0.2,
-   
+    timeout=15,
+    max_retries=1,
 )
 
-# 2. Helper Functions
-CONTEXT_FILE_PATH = "sample.txt"  # <-- Update this if your Kadirur data file has a different filename
+CONTEXT_FILE_PATH = "sample.txt"  # <-- Ensure this matches your Kadirur text file name
 
 
 def read_sample_file() -> str:
     if not os.path.exists(CONTEXT_FILE_PATH):
+        print(f"WARNING: {CONTEXT_FILE_PATH} not found!")
         return ""
     with open(CONTEXT_FILE_PATH, "r", encoding="utf-8") as f:
         return f.read()
@@ -43,11 +44,14 @@ def get_matching_blocks(full_text: str, question: str) -> str:
         return ""
     blocks = re.split(r"\n\s*\n", full_text.strip())
     q_words = set(re.findall(r"\w+", question.lower()))
-    stop_words = {"what", "where", "who", "is", "are", "the", "in", "of", "for", "to", "a", "an", "tell", "me", "about", "kadirur"}
+    stop_words = {
+        "what", "where", "who", "why", "when", "how", "is", "are", "was", "were",
+        "the", "in", "of", "for", "to", "a", "an", "tell", "me", "about", "that", "this", "reason"
+    }
     keywords = q_words - stop_words
 
     if not keywords:
-        return full_text[:6000]
+        return ""
 
     matched = []
     for block in blocks:
@@ -55,8 +59,8 @@ def get_matching_blocks(full_text: str, question: str) -> str:
         if any(kw in block_lower for kw in keywords):
             matched.append(block)
 
-    result = "\n\n".join(matched) if matched else full_text[:6000]
-    return result[:8000]  # Cap context size so Gemini responds quickly
+    result = "\n\n".join(matched) if matched else ""
+    return result[:6000]
 
 
 def extract_text(response) -> str:
@@ -96,13 +100,12 @@ def get_matching_urls(context_text: str, question: str) -> list:
     return unique_urls
 
 
-# 3. System Prompt & Chains
 system_prompt = (
     "I am Kadirur village AI assistant. Respond concisely without introductory filler.\n"
     "CRITICAL RULES:\n"
     "1. PRIORITY SEARCH & FALLBACK RULE (STRICT):\n"
-    "   - STEP 1 (CHECK CONTEXT FIRST): Search the entire provided Context thoroughly. If Context contains a direct answer, answer ONLY using that exact Context information. Do NOT include unrelated sections, NEVER invent outside restaurant, hotel, shop, or place names not written in Context, and copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
-    "   - STEP 2 (GENERAL KNOWLEDGE FALLBACK): If the answer is missing from Context, or Context only mentions a heading/keyword without answering the question, answer accurately using general knowledge while following all formatting and translation rules below.\n"
+    "   - STEP 1 (CHECK CONTEXT FIRST): Search the provided Context thoroughly. If Context contains a direct answer, answer ONLY using that exact Context information. Do NOT include unrelated sections, NEVER invent outside restaurant, hotel, shop, or place names not written in Context, and copy EVERY SINGLE LINE and continuation line of the matching entries verbatim.\n"
+    "   - STEP 2 (GENERAL KNOWLEDGE FALLBACK): If Context is empty or missing the answer, answer accurately using general knowledge while following all formatting and translation rules below.\n"
     "2. FACTUAL RULE: The current Chief Minister of Kerala is V. D. Satheesan (who took office on May 18, 2026). Never state that Pinarayi Vijayan is the current Chief Minister.\n"
     "3. Provide the translation in pure, natural native Malayalam grammar and script. Never use Hindi phrasing or word choices written in Malayalam letters.\n"
     "4. Use standard regional words (e.g., use 'ഇന്ത്യയുടെ' instead of 'ഭാരതത്തിന്റെ').\n"
@@ -119,7 +122,7 @@ system_prompt = (
 
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
-    ("human", "{question}")
+    ("human", "Previous conversation:\n{history}\n\nCurrent question: {question}")
 ])
 
 chain = prompt_template | llm
@@ -136,42 +139,54 @@ mal_prompt = ChatPromptTemplate.from_messages([
 
 mal_chain = mal_prompt | llm
 
-# 4. Cache file content & frequent answers in RAM for instant speed
 CACHED_CONTEXT = read_sample_file()
 ANSWER_CACHE = {}
 
 
 class QueryRequest(BaseModel):
     question: str
+    history: list = []
+
+
+# Quick browser test endpoint: open http://YOUR_EC2_IP:8000/ in browser to verify connection
+@app.get("/")
+def health_check():
+    return {"status": "online", "message": "Kadirur AI Backend is running"}
 
 
 @app.post("/api/query")
-async def query_endpoint(request: QueryRequest):
+def query_endpoint(request: QueryRequest):
+    start_time = time.time()
     try:
         clean_q = request.question.strip()
         if not clean_q:
             raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
-        # Return instantly from RAM if this exact question was already asked
-        cache_key = clean_q.lower()
+        history_text = "\n".join(
+            f"User: {h.get('question', '')}\nAssistant: {h.get('answer', '')}"
+            for h in request.history[-3:]
+        ) or "None"
+
+        cache_key = f"{clean_q.lower()}|{history_text}"
         if cache_key in ANSWER_CACHE:
+            print(f"[CACHE HIT] {time.time() - start_time:.3f}s")
             return {"answer": ANSWER_CACHE[cache_key]}
 
         full_context = CACHED_CONTEXT or read_sample_file()
-        focused_context = get_matching_blocks(full_context, clean_q)
+        search_query = f"{request.history[-1]['question']} {clean_q}" if request.history else clean_q
+        focused_context = get_matching_blocks(full_context, search_query)
 
-        # Non-blocking async Gemini call
-        response = await chain.ainvoke({
-            "context": focused_context,
+        response = chain.invoke({
+            "context": focused_context or "No matching local Kadirur records found.",
+            "history": history_text,
             "question": clean_q
         })
 
         answer_text = extract_text(response)
 
-        # Fallback if Gemini returns empty on a long section (such as History of Kadirur)
         if not answer_text and focused_context:
             eng_formatted = format_as_vertical_list(focused_context)
-            mal_resp = await mal_chain.ainvoke({"text": eng_formatted})
+            mal_resp = mal_chain.invoke({"text": eng_formatted})
             mal_raw = extract_text(mal_resp)
             if mal_raw:
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
@@ -183,7 +198,7 @@ async def query_endpoint(request: QueryRequest):
                 answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
             else:
                 eng_formatted = format_as_vertical_list(answer_text)
-                mal_resp = await mal_chain.ainvoke({"text": eng_formatted})
+                mal_resp = mal_chain.invoke({"text": eng_formatted})
                 mal_raw = extract_text(mal_resp)
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}" if mal_raw else eng_formatted
 
@@ -198,20 +213,20 @@ async def query_endpoint(request: QueryRequest):
             else:
                 answer_text += url_block
 
-        # Save answer in RAM cache (max 200 items)
         if answer_text:
             if len(ANSWER_CACHE) >= 200:
                 ANSWER_CACHE.pop(next(iter(ANSWER_CACHE)))
             ANSWER_CACHE[cache_key] = answer_text
 
+        print(f"[GEMINI DONE] {time.time() - start_time:.2f}s")
         return {"answer": answer_text}
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[ERROR] {time.time() - start_time:.2f}s -> {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
     import uvicorn
-    # Change "app:app" if your Python filename is different (e.g., "main:app")
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, workers=2)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
