@@ -116,14 +116,22 @@ def format_as_vertical_list(text: str) -> str:
         stripped = raw_line.strip()
 
         if stripped.startswith('#'):
-            cleaned_lines.append(stripped.lstrip('#').strip().rstrip(':') + ":")
+            clean_heading = stripped.lstrip('#').strip().rstrip(':')
+            if '/' in clean_heading:
+                first_part, *_ = clean_heading.split('/', 1)
+                clean_heading = first_part.strip()
+            cleaned_lines.append(clean_heading + ":")
             continue
 
         had_bullet = bool(re.match(r'^[-*•]\s+', stripped))
         line_no_bullet = re.sub(r'^[-*•]+\s*', '', stripped)
 
         if line_no_bullet.endswith(':'):
-            cleaned_lines.append(line_no_bullet)
+            clean_label = line_no_bullet.rstrip(':')
+            if '/' in clean_label:
+                first_part, *_ = clean_label.split('/', 1)
+                clean_label = first_part.strip()
+            cleaned_lines.append(clean_label + ":")
             continue
 
         if line_no_bullet.startswith(('http://', 'https://')) or 'http://' in line_no_bullet or 'https://' in line_no_bullet:
@@ -137,6 +145,7 @@ def format_as_vertical_list(text: str) -> str:
         cleaned_lines.append(f"  {line_no_bullet}" if is_indented else line_no_bullet)
 
     return "\n".join(cleaned_lines)
+
 
 
 def get_matching_urls(context_text: str, question: str) -> list:
