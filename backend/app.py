@@ -14,10 +14,11 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 app = FastAPI()
 
+# Fixed: allow_credentials=False is required when allow_origins=["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,10 +40,11 @@ def read_sample_file() -> str:
         return f.read()
 
 
-def get_matching_blocks(full_text: str, question: str, max_blocks: int = 3, is_followup: bool = False) -> str:
+def get_matching_blocks(full_text: str, question: str) -> str:
     if not full_text:
         return ""
 
+    # Keep '#' / '##' headings attached to all bullets and lines underneath
     raw_sections = re.split(r'(?=^#{1,3}\s+)', full_text.strip(), flags=re.MULTILINE)
     blocks = []
     for sec in raw_sections:
@@ -62,6 +64,7 @@ def get_matching_blocks(full_text: str, question: str, max_blocks: int = 3, is_f
     }
     keywords = q_words - stop_words or q_words
 
+    # Expand singular/plural and common spelling variations (ads/ad, restaurant/restaurent/hotel)
     expanded_keywords = set(keywords)
     for w in keywords:
         if w.endswith('s') and len(w) > 3:
@@ -84,11 +87,9 @@ def get_matching_blocks(full_text: str, question: str, max_blocks: int = 3, is_f
             scored_blocks.append((score, block))
 
     scored_blocks.sort(reverse=True)
-    top_blocks = [b for _, b in scored_blocks[:max_blocks]]
+    top_blocks = [b for _, b in scored_blocks[:3]]
 
-    if top_blocks:
-        return "\n\n".join(top_blocks)
-    return "" if is_followup else full_text[:8000]
+    return "\n\n".join(top_blocks) if top_blocks else ""
 
 
 def extract_text(response) -> str:
@@ -226,10 +227,9 @@ def query_endpoint(request: QueryRequest):
             return {"answer": ANSWER_CACHE[cache_key]}
 
         full_context = CACHED_CONTEXT or read_sample_file()
-        is_followup = len(recent_items) > 0
-        last_q = recent_items[-1].get("question", "") if is_followup else ""
+        last_q = recent_items[-1].get("question", "") if recent_items else ""
         search_query = f"{last_q} {clean_q}".strip()
-        focused_context = get_matching_blocks(full_context, search_query, is_followup=is_followup)
+        focused_context = get_matching_blocks(full_context, search_query)
 
         response = chain.invoke({
             "context": focused_context or "No matching local Kadirur records found.",
@@ -247,8 +247,8 @@ def query_endpoint(request: QueryRequest):
                 answer_text = f"{eng_formatted}\n---\n{format_as_vertical_list(mal_raw)}"
             else:
                 answer_text = eng_formatted
-        elif answer_text:
-            if "---" in answer_text:
+elif answer_text:
+if "---" in answer_text:
 eng, mal = answer_text.split("---", 1)
 answer_text = f"{format_as_vertical_list(eng)}\n---\n{format_as_vertical_list(mal)}"
 else:
@@ -272,7 +272,7 @@ ANSWER_CACHE[cache_key] = answer_text
 print(f"[GEMINI DONE] {time.time() - start_time:.2f}s")
 return {"answer": answer_text}
 except HTTPException:
-raise
+    raise
 except Exception as e:
 print(f"[ERROR] {time.time() - start_time:.2f}s -> {e}")
 raise HTTPException(status_code=500, detail=str(e))
