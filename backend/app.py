@@ -115,12 +115,8 @@ def format_as_vertical_list(text: str) -> str:
         is_indented = raw_line.startswith(('  ', '\t'))
         stripped = raw_line.strip()
 
-        if line_no_bullet.endswith(':'):
-            clean_label = line_no_bullet.rstrip(':')
-            
-        if '/' in clean_label:
-            clean_label = clean_label.split('/', 1)[0].strip()
-            cleaned_lines.append(clean_label + ":")
+        if stripped.startswith('#'):
+            cleaned_lines.append(stripped.lstrip('#').strip().rstrip(':') + ":")
             continue
 
         had_bullet = bool(re.match(r'^[-*•]\s+', stripped))
