@@ -279,6 +279,6 @@ raise
 except Exception as e:
 print(f"[ERROR] {time.time() - start_time:.2f}s -> {e}")
 raise HTTPException(status_code=500, detail=str(e))
-if name == "main":
-import uvicorn
-uvicorn.run(app, host="0.0.0.0", port=8000)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
