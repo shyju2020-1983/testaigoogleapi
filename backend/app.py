@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash-lite",
+      model="gemini-3.5-flash-lite",
     temperature=0.2,
     google_api_key=GOOGLE_API_KEY,
     timeout=15,
