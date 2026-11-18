@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import myImage  from './logo.svg';
+
 function App() {
 
 
@@ -11,7 +11,7 @@ function App() {
   // ANIMATED LIGHT BLUE PLACEHOLDER & ADVERTISEMENT ROTATION STATES (EVERY 2 SECONDS)
   const [placeholderText, setPlaceholderText] = useState('Ask question about kadirur');
   const [followUpPlaceholder, setFollowUpPlaceholder] = useState('Ask follow-up question');
-  const [adText, setAdText] = useState('For advertisement contact 8078521983');
+  const [adText, setAdText] = useState('For advertisement contact 8078521983 or type ADS ');
 
   useEffect(() => {
     let isEnglish = true;
@@ -22,11 +22,11 @@ function App() {
       if (isEnglish) {
         setPlaceholderText('Ask question about Kadirur');
         setFollowUpPlaceholder('Ask follow-up question');
-        setAdText('For advertisement contact   8078521983');
+        setAdText('For advertisement contact 8078521983 or type ADS');
       } else {
         setPlaceholderText('കതിരൂരിനെക്കുറിച്ച് ചോദ്യം ചോദിക്കാം');
         setFollowUpPlaceholder('വീണ്ടും തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
-        setAdText('പരസ്യങ്ങൾക്കായി ബന്ധപ്പെടുക   8078521983');
+        setAdText('പരസ്യങ്ങൾക്കായി ബന്ധപ്പെടുക 8078521983 അല്ലെ ടൈപ്പ് ADS');
       }
     }, 2000);
 
@@ -118,7 +118,7 @@ function App() {
   };
 
  return (
-  
+
   <div style={{ position: 'relative', backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0', boxSizing: 'border-box' }}>
     <style>{`
       .custom-chat-input::placeholder {
@@ -127,23 +127,9 @@ function App() {
       }
     `}</style>
 
-    <img
-  src={myImage}
-  alt=""
-  style={{
-    position: 'absolute',
-    top: '20px',
-    right: '20px',
-    width: '80px',
-    opacity: 0.4,
-    pointerEvents: 'none',
-    zIndex: 10,
-  }}
-/>
-    
 
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
-      <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff' }}>
+      <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff', padding: '0 45px', fontSize: '20px' }}>
         <b>Kadirur village AI Assistant</b>
       </h2>
 
@@ -156,15 +142,20 @@ function App() {
           marginBottom: '18px',
         }}
       >
-        <div
+         <div
           style={{
             backgroundColor: 'rgba(0, 123, 255, 0.12)',
             border: '1px solid rgba(0, 123, 255, 0.4)',
             borderRadius: '8px',
             padding: '6px 12px',
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
+            width: '100%',
+            maxWidth: '380px',
+            minHeight: '42px',
+            boxSizing: 'border-box',
           }}
         >
           <span
