@@ -116,8 +116,9 @@ def format_as_vertical_list(text: str) -> str:
         stripped = raw_line.strip()
         if line_no_bullet.endswith(':'):
             clean_label = line_no_bullet.rstrip(':')
-            if '/' in clean_label:
-                clean_label = clean_label.split('/', 1)[0].strip()
+
+        if '/' in clean_label:
+            clean_label = clean_label.split('/', 1)[0].strip()
             cleaned_lines.append(clean_label + ":")
             continue
 
