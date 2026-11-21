@@ -47,10 +47,13 @@ def extract_all_headings(full_text: str) -> list[str]:
     for raw_line in full_text.splitlines():
         line = raw_line.strip()
         if line.startswith("## "):
-            after_hashes = line[3:].strip()
-            before_slash = after_hashes.split("/", 1)[0].strip().rstrip(":").strip()
-            if before_slash:
-                headings.append(before_slash)
+            # Remove '##' and any trailing ':'
+            after_hashes = line[3:].strip().rstrip(":").strip()
+            # Split by '/' so every English & Malayalam alias becomes its own autofill item
+            for part in after_hashes.split("/"):
+                clean_part = part.strip().rstrip(":").strip()
+                if clean_part:
+                    headings.append(clean_part)
 
     return list(dict.fromkeys(headings))
 
