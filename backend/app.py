@@ -39,6 +39,47 @@ def read_sample_file() -> str:
         return f.read()
 
 
+def extract_all_headings(full_text: str) -> list[str]:
+    if not full_text:
+        return []
+
+    headings = []
+    raw_sections = re.split(r'(?=^#{1,3}\s+)', full_text.strip(), flags=re.MULTILINE)
+    blocks = []
+    for sec in raw_sections:
+        sec = sec.strip()
+        if not sec:
+            continue
+        if not sec.startswith('#') and '\n\n' in sec:
+            blocks.extend(b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip())
+        else:
+            blocks.append(sec)
+
+    for block in blocks:
+        lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+        if not lines:
+            continue
+
+        first_line = lines[0]
+
+        # Skip lines that are clearly list bullets or URLs
+        if first_line.startswith(('•', '-', '*', 'http://', 'https://')):
+            continue
+
+        # Clean markdown '#' and trailing ':'
+        clean_heading = first_line.lstrip('#').strip().rstrip(':').strip()
+
+        # If heading has bilingual '/' (e.g., "History of Kadirur / കതിരൂരിന്റെ ചരിത്രം"), keep clean title
+        if '/' in clean_heading:
+            clean_heading = clean_heading.split('/', 1)[0].strip()
+
+        if clean_heading and len(clean_heading) <= 100:
+            headings.append(clean_heading)
+
+    # Deduplicate while preserving original order
+    return list(dict.fromkeys(headings))
+
+
 def get_matching_blocks(full_text: str, question: str) -> str:
     if not full_text:
         return ""
@@ -146,7 +187,6 @@ def format_as_vertical_list(text: str) -> str:
     return "\n".join(cleaned_lines)
 
 
-
 def get_matching_urls(context_text: str, question: str) -> list:
     if not context_text:
         return []
@@ -199,7 +239,9 @@ mal_prompt = ChatPromptTemplate.from_messages([
 
 mal_chain = mal_prompt | llm
 
+# Used to store details in RAM
 CACHED_CONTEXT = read_sample_file()
+CACHED_HEADINGS = extract_all_headings(CACHED_CONTEXT)
 ANSWER_CACHE = {}
 
 
@@ -207,10 +249,17 @@ class QueryRequest(BaseModel):
     question: str
     history: list = []
 
-
 @app.get("/")
 def health_check():
     return {"status": "online", "message": "Kadirur AI Backend is running"}
+
+
+@app.get("/api/headings")
+def get_headings():
+    """Returns all cached headings from sample.txt for React autofill suggestions."""
+    full_context = CACHED_CONTEXT or read_sample_file()
+    headings = CACHED_HEADINGS or extract_all_headings(full_context)
+    return {"headings": headings}
 
 
 @app.post("/api/query")
