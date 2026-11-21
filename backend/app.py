@@ -44,40 +44,25 @@ def extract_all_headings(full_text: str) -> list[str]:
         return []
 
     headings = []
-    raw_sections = re.split(r'(?=^#{1,3}\s+)', full_text.strip(), flags=re.MULTILINE)
-    blocks = []
-    for sec in raw_sections:
-        sec = sec.strip()
-        if not sec:
-            continue
-        if not sec.startswith('#') and '\n\n' in sec:
-            blocks.extend(b.strip() for b in re.split(r'\n\s*\n', sec) if b.strip())
-        else:
-            blocks.append(sec)
-
-    for block in blocks:
-        lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
-        if not lines:
+    for raw_line in full_text.splitlines():
+        line = raw_line.strip()
+        if not line:
             continue
 
-        first_line = lines[0]
-
-        # Skip lines that are clearly list bullets or URLs
-        if first_line.startswith(('•', '-', '*', 'http://', 'https://')):
+        # Skip bullets, URLs, and long paragraph lines
+        if line.startswith(('•', '-', '*', 'http://', 'https://')):
             continue
 
-        # Clean markdown '#' and trailing ':'
-        clean_heading = first_line.lstrip('#').strip().rstrip(':').strip()
+        # Match # headings, colon headings (Heading:), or short title lines without a period
+        if line.startswith('#') or line.endswith(':') or (len(line) <= 80 and not line.endswith('.')):
+            clean = line.lstrip('#').strip().rstrip(':').strip()
+            if '/' in clean:
+                clean = clean.split('/', 1)[0].strip()
+            if clean and len(clean) <= 100:
+                headings.append(clean)
 
-        # If heading has bilingual '/' (e.g., "History of Kadirur / കതിരൂരിന്റെ ചരിത്രം"), keep clean title
-        if '/' in clean_heading:
-            clean_heading = clean_heading.split('/', 1)[0].strip()
-
-        if clean_heading and len(clean_heading) <= 100:
-            headings.append(clean_heading)
-
-    # Deduplicate while preserving original order
     return list(dict.fromkeys(headings))
+
 
 
 def get_matching_blocks(full_text: str, question: str) -> str:
