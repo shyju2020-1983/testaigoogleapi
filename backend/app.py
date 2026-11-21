@@ -46,25 +46,21 @@ def extract_all_headings(full_text: str) -> list[str]:
     headings = []
     for raw_line in full_text.splitlines():
         line = raw_line.strip()
-        if not line:
-            continue
-
-        # Skip bullets, URLs, and long paragraph lines
-        if line.startswith(('•', '-', '*', 'http://', 'https://')):
-            continue
-
-        # Match # headings, colon headings (Heading:), or short title lines without a period
-        if line.startswith('#') or line.endswith(':') or (len(line) <= 80 and not line.endswith('.')):
-            clean = line.lstrip('#').strip().rstrip(':').strip()
-            if '/' in clean:
-                clean = clean.split('/', 1)[0].strip()
-            if clean and len(clean) <= 100:
-                headings.append(clean)
+        if line.startswith("## "):
+            after_hashes = line[3:].strip()
+            before_slash = after_hashes.split("/", 1)[0].strip().rstrip(":").strip()
+            if before_slash:
+                headings.append(before_slash)
 
     return list(dict.fromkeys(headings))
 
 
 
+@app.get("/api/headings")
+def get_headings():
+    full_context = CACHED_CONTEXT or read_sample_file()
+    headings = CACHED_HEADINGS or extract_all_headings(full_context)
+    return {"headings": headings}
 def get_matching_blocks(full_text: str, question: str) -> str:
     if not full_text:
         return ""
