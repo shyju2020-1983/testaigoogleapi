@@ -44,6 +44,7 @@ def extract_all_headings(full_text: str) -> list[str]:
         return []
 
     headings = []
+    seen = set()
     for raw_line in full_text.splitlines():
         line = raw_line.strip()
         if line.startswith("## "):
@@ -51,12 +52,13 @@ def extract_all_headings(full_text: str) -> list[str]:
             after_hashes = line[3:].strip().rstrip(":").strip()
             # Split by '/' so every English & Malayalam alias becomes its own autofill item
             for part in after_hashes.split("/"):
-                clean_part = part.strip().rstrip(":").strip()
-                if clean_part:
+                # Collapse multiple spaces into one and clean trailing colons
+                clean_part = re.sub(r'\s+', ' ', part.strip().rstrip(":")).strip()
+                if clean_part and clean_part.lower() not in seen:
+                    seen.add(clean_part.lower())
                     headings.append(clean_part)
 
-    return list(dict.fromkeys(headings))
-
+    return headings
 
 
 @app.get("/api/headings")
@@ -89,20 +91,27 @@ def get_matching_blocks(full_text: str, question: str) -> str:
 
     expanded_keywords = set(keywords)
     for w in keywords:
-        if w.endswith('s') and len(w) > 3:
-            expanded_keywords.add(w[:-1])
-        else:
-            expanded_keywords.add(w + 's')
-        if any(k in w for k in ('restaurant', 'restaurent', 'hotel')):
-            expanded_keywords.update({'restaurant', 'restaurants', 'restaurent', 'restaurents', 'hotel', 'hotels'})
-
+       q_clean = re.sub(r'\s+', ' ', question.strip()).lower()
     scored_blocks = []
     for block in blocks:
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if not lines:
             continue
         first_line, *_ = lines
+        aliases = [
+            re.sub(r'\s+', ' ', a.strip().rstrip(':')).lower()
+            for a in first_line.lstrip('#').split('/')
+        ]
+        # Exact autofill heading match returns ONLY that section immediately
+        if q_clean in aliases:
+            return block
+
         heading_words = set(re.findall(r'\w+', first_line.lower()))
+        body_words = set(re.findall(r'\w+', block.lower()))
+        score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
+        if score > 0:
+            scored_blocks.append((score, block))
+
         body_words = set(re.findall(r'\w+', block.lower()))
         score = (len(expanded_keywords & heading_words) * 10) + len(expanded_keywords & body_words)
         if score > 0:
