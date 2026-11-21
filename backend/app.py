@@ -39,22 +39,6 @@ def read_sample_file() -> str:
         return f.read()
 
 
-def extract_cached_headers(full_text: str) -> list[str]:
-    if not full_text:
-        return []
-    headers = []
-    for raw_line in full_text.splitlines():
-        line = raw_line.strip()
-        if line.startswith("#"):
-            clean = line.lstrip("#").strip().rstrip(":")
-            if "/" in clean:
-                first_part, *_ = clean.split("/", 1)
-                clean = first_part.strip()
-            if clean and clean not in headers:
-                headers.append(clean)
-    return headers
-
-
 def get_matching_blocks(full_text: str, question: str) -> str:
     if not full_text:
         return ""
@@ -162,6 +146,7 @@ def format_as_vertical_list(text: str) -> str:
     return "\n".join(cleaned_lines)
 
 
+
 def get_matching_urls(context_text: str, question: str) -> list:
     if not context_text:
         return []
@@ -215,7 +200,6 @@ mal_prompt = ChatPromptTemplate.from_messages([
 mal_chain = mal_prompt | llm
 
 CACHED_CONTEXT = read_sample_file()
-CACHED_HEADERS = extract_cached_headers(CACHED_CONTEXT)
 ANSWER_CACHE = {}
 
 
@@ -227,11 +211,6 @@ class QueryRequest(BaseModel):
 @app.get("/")
 def health_check():
     return {"status": "online", "message": "Kadirur AI Backend is running"}
-
-
-@app.get("/api/headers")
-def get_headers():
-    return {"headers": CACHED_HEADERS}
 
 
 @app.post("/api/query")
