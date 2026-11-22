@@ -47,7 +47,7 @@ function App() {
         setAdText('For advertisement contact 8078521983 or type ADS');
       } else {
         setPlaceholderText('കതിരൂരിനെക്കുറിച്ച് ചോദ്യം ചോദിക്കാം');
-        setFollowUpPlaceholder('വീണ്ടും തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
+        setFollowUpPlaceholder('തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
         setAdText('പരസ്യങ്ങൾക്കായി ബന്ധപ്പെടുക 8078521983 അല്ലെ ടൈപ്പ് ADS');
       }
     }, 2000);

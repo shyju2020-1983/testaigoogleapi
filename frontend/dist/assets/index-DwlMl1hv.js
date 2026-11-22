@@ -41,7 +41,7 @@ Error generating stack: `+o.message+`
           overscroll-behavior: contain;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
-          scrollbar-color: #007bff #181818;
+          scrollbar-color: #94979a #181818;
         }
 
         .autofill-dropdown::-webkit-scrollbar {
