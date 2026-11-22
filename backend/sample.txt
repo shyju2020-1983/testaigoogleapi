@@ -2,7 +2,7 @@ VILLAGE NAME: Kadirur, Kathiroor
 
 CATEGORY: Kadirur, Kathiroor village details / കതിരൂർ ഗ്രാമത്തിൻ്റെ വിവരം 
 
-# Kadirur/kathiroor village Overview 
+## Kadirur/kathiroor village Overview 
 
 • Kadirur is a census town and Grama Panchayat of Kannur district in the State of Kerala, India. 
 • Kadirur is situated on the Thalassery-Coorg road, approximately midway between Thalassery and Kuthuparamba at a distance of about 7 km from each town
