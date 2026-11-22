@@ -47,7 +47,7 @@ function App() {
         setAdText('For advertisement contact 8078521983 or type ADS');
       } else {
         setPlaceholderText('കതിരൂരിനെക്കുറിച്ച് ചോദ്യം ചോദിക്കാം');
-        setFollowUpPlaceholder('തുടർച്ചോദ്യങ്ങൾ ചോദിക്കാം');
+        setFollowUpPlaceholder('തുടർ ചോദ്യം ചോദിക്കാം');
         setAdText('പരസ്യങ്ങൾക്കായി ബന്ധപ്പെടുക 8078521983 അല്ലെ ടൈപ്പ് ADS');
       }
     }, 2000);
@@ -194,9 +194,10 @@ function App() {
     setActiveIndex(-1);
   };
 
+  // HTML Code starts here 
   return (
     <div style={{ position: 'relative', backgroundColor: '#121212', minHeight: '100vh', width: '100%', padding: '40px 0 240px 0', boxSizing: 'border-box' }}>
-           <style>{`
+      <style>{`
         .custom-chat-input::placeholder {
           color: #7caee3 !important;
           opacity: 1;
@@ -249,13 +250,12 @@ function App() {
         }
       `}</style>
 
-
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', color: '#ffffff' }}>
         <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: '#007bff', padding: '0 45px', fontSize: '20px' }}>
           <b>Kadirur village AI Assistant</b>
         </h2>
 
-        {/* TOP ROTATING ADVERTISEMENT BANNER */}
+        {/* TOP ROTATING ADVERTISEMENT BANNER (FIXED HEIGHT TO PREVENT FLICKERING) */}
         <div
           style={{
             display: 'flex',
@@ -276,7 +276,8 @@ function App() {
               gap: '8px',
               width: '100%',
               maxWidth: '380px',
-              minHeight: '42px',
+              height: '50px',
+              overflow: 'hidden',
               boxSizing: 'border-box',
             }}
           >
@@ -289,17 +290,27 @@ function App() {
                 padding: '2px 6px',
                 borderRadius: '4px',
                 letterSpacing: '0.5px',
+                flexShrink: 0,
               }}
             >
               AD
             </span>
-            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#90caf9' }}>
+            <span
+              style={{
+                fontSize: '12.5px',
+                fontWeight: '600',
+                color: '#90caf9',
+                lineHeight: '1.35',
+                textAlign: 'left',
+              }}
+            >
               {adText}
             </span>
           </div>
         </div>
 
         {/* CHAT DISPLAY LOG PANEL */}
+               {/* CHAT DISPLAY LOG PANEL */}
         <div style={{ marginTop: '20px' }}>
           {chatHistory.map((chat, index) => {
             const parts = chat.answer.split(/\n?\s*---\s*\n?/);
@@ -367,7 +378,7 @@ function App() {
           {/* Input + Floating Suggestions Wrapper */}
           <div style={{ position: 'relative', flexGrow: 1, display: 'flex' }}>
             {showSuggestions && filteredHeadings.length > 0 && (
-                           <ul
+              <ul
                 ref={suggestionsListRef}
                 className="autofill-dropdown"
                 style={{
@@ -386,8 +397,6 @@ function App() {
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
                   zIndex: 100
                 }}
-              
-
               >
                 {filteredHeadings.map((heading, idx) => (
                   <li
@@ -427,7 +436,10 @@ function App() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '12px',
+                height: '46px',
+                boxSizing: 'border-box',
+                padding: '11px 12px',
+                lineHeight: '22px',
                 fontSize: '15px',
                 backgroundColor: '#222',
                 border: '1px solid #444',
@@ -436,7 +448,7 @@ function App() {
                 outline: 'none',
                 opacity: loading ? 0.5 : 1,
                 cursor: loading ? 'not-allowed' : 'text',
-                transition: 'all 0.2s ease-in-out'
+                transition: 'opacity 0.2s ease-in-out'
               }}
             />
           </div>
@@ -445,36 +457,35 @@ function App() {
             type="submit"
             disabled={loading}
             style={{
-              padding: '12px',
+              height: '46px',
+              boxSizing: 'border-box',
+              padding: '0 18px',
               cursor: loading ? 'not-allowed' : 'pointer',
               backgroundColor: loading ? '#4a5568' : '#007bff',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
-              fontWeight: 'bold',
               fontSize: '15px',
-              transition: 'background-color 0.2s'
+              fontWeight: 'bold'
             }}
           >
-            {loading ? 'Searching...' : 'Ask'}
+            {loading ? '...' : 'Ask'}
           </button>
 
-          {(chatHistory.length > 0 || errorDetails) && (
+          {chatHistory.length > 0 && (
             <button
               type="button"
               onClick={handleClearChat}
-              disabled={loading}
               style={{
-                padding: '5px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                backgroundColor: loading ? '#4a5568' : '#007bff',
+                height: '46px',
+                boxSizing: 'border-box',
+                padding: '0 14px',
+                cursor: 'pointer',
+                backgroundColor: '#333',
                 color: '#fff',
-                border: 'none',
+                border: '1px solid #555',
                 borderRadius: '6px',
-                fontWeight: 'bold',
-                fontSize: '15px',
-                transition: 'background-color 0.2s',
-                opacity: loading ? 0.6 : 1
+                fontSize: '14px'
               }}
             >
               Clear
